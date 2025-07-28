@@ -1,0 +1,29 @@
+
+> elevenmobile@1.0.0 start:dev
+> expo start --dev-client
+
+env: load .env
+env: export EXPO_PUBLIC_API_URL
+Starting project at /Users/seamoss/Documents/Dev/Eleven/ui/ElevenMobile
+Starting Metro Bundler
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Recrawled this watch 5 times, most recently because:
+MustScanSubDirs UserDroppedTo resolve, please review the information on
+https://facebook.github.io/watchman/docs/troubleshooting.html#recrawl
+To clear this warning, run:
+`watchman watch-del '/Users/seamoss/Documents/Dev/Eleven/ui' ; watchman watch-project '/Users/seamoss/Documents/Dev/Eleven/ui'`
+
+iOS ./index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS Bundled 1268ms index.js (1075 modules)
+ LOG  🔧 API Configuration:
+ LOG    EXPO_PUBLIC_API_URL: http://localhost:3030/v1
+ LOG    __DEV__: true
+ LOG    Final baseURL: http://localhost:3030/v1
+iOS ./index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS Bundled 63ms index.js (1 module)
+iOS Bundled 46ms index.js (1 module)
+ LOG  🔧 API Configuration:
+ LOG    EXPO_PUBLIC_API_URL: http://localhost:3030/v1
+ LOG    __DEV__: true
+ LOG    Final baseURL: http://localhost:3030/v1
