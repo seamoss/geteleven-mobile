@@ -1,4 +1,6 @@
-{
+const IS_DEV = process.env.NODE_ENV === 'development';
+
+const config = {
   "expo": {
     "name": "Eleven",
     "slug": "Eleven-Expo",
@@ -115,4 +117,15 @@
       "url": "https://u.expo.dev/a15191fc-bdca-4e57-ac76-b1b678bcac7f"
     }
   }
+};
+
+// Only add plugins when not in development or when explicitly building
+if (!IS_DEV || process.env.EAS_BUILD) {
+  config.expo.plugins = [
+    "expo-notifications",
+    "expo-apple-authentication",
+    "expo-in-app-purchases"
+  ];
 }
+
+export default config;
