@@ -29,12 +29,7 @@ const config = {
           'This app accesses the photo library to let you select a profile photo.',
         NSMicrophoneUsageDescription:
           'This app uses the microphone to record and send voice messages to your connections.',
-        UIBackgroundModes: [
-          'audio',
-          'audio',
-          'background-fetch',
-          'remote-notification'
-        ],
+        UIBackgroundModes: ['audio'],
         AVAudioSessionCategoryOptions: [
           'MixWithOthers',
           'DuckOthers',
@@ -101,7 +96,6 @@ const config = {
         'READ_EXTERNAL_STORAGE',
         'CAMERA',
         'RECEIVE_BOOT_COMPLETED',
-        // 'VIBRATE',
         'com.google.android.c2dm.permission.RECEIVE',
         'android.permission.WAKE_LOCK'
       ],
