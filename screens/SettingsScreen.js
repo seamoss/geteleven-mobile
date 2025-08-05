@@ -164,13 +164,11 @@ export default function SettingsScreen () {
             try {
               const result = await signOut()
               if (result.success) {
-                // Navigate to signin screen
-                navigate('Signin')
+                navigate('Signin', { animation: 'slide_from_left' })
               } else {
                 Alert.alert('Error', 'Failed to sign out. Please try again.')
               }
             } catch (error) {
-              console.error('Sign out error:', error)
               Alert.alert('Error', 'Failed to sign out. Please try again.')
             }
           }
@@ -191,7 +189,9 @@ export default function SettingsScreen () {
           <Text style={styles.header}>Settings</Text>
           <TouchableOpacity
             style={styles.closeButton}
-            onPress={() => navigate('Connections')}
+            onPress={() =>
+              navigate('Connections', { animation: 'slide_from_left' })
+            }
           >
             <X size={20} color={Colors.foreground} />
           </TouchableOpacity>

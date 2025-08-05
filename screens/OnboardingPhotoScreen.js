@@ -63,11 +63,11 @@ export default function OnboardingPhotoScreen ({ navigation, route }) {
 
   const handleImageSelected = imageAsset => {
     setImageSelected(true)
-    console.log('📸 Image selected for onboarding:', imageAsset.uri)
+    console.log('Image selected for onboarding:', imageAsset.uri)
   }
 
   const handleImageUploaded = async uploadData => {
-    console.log('✅ Avatar uploaded successfully:', uploadData.url)
+    console.log('Avatar uploaded successfully:', uploadData.url)
     // Navigate to the preview screen with profile data
     navigation.navigate('OnboardingPreview', {
       firstName,

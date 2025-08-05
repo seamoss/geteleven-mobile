@@ -53,8 +53,8 @@ export default function App () {
 
   // Initialize audio mode and auto-updates for production builds
   useEffect(() => {
-    initializeAudioMode()
     initializeAutoUpdates()
+    initializeAudioMode()
   }, [])
 
   if (!fontsLoaded) {
@@ -70,9 +70,23 @@ export default function App () {
           contentStyle: { backgroundColor: '#fff' }
         }}
       >
-        <Stack.Screen name='Home' component={HomeScreen} />
+        <Stack.Screen
+          name='Home'
+          component={HomeScreen}
+          options={({ route }) => {
+            const animation = route.params?.animation || 'slide_from_right'
+            return { animation }
+          }}
+        />
         <Stack.Screen name='Signup' component={SignupScreen} />
-        <Stack.Screen name='Signin' component={SigninScreen} />
+        <Stack.Screen
+          name='Signin'
+          component={SigninScreen}
+          options={({ route }) => {
+            const animation = route.params?.animation || 'slide_from_right'
+            return { animation }
+          }}
+        />
         <Stack.Screen
           name='OnboardingWelcome'
           component={OnboardingWelcomeScreen}
@@ -94,12 +108,26 @@ export default function App () {
           name='OnboardingPreview'
           component={OnboardingPreviewScreen}
         />
-        <Stack.Screen name='Connections' component={ConnectionsScreen} />
+        <Stack.Screen
+          name='Connections'
+          component={ConnectionsScreen}
+          options={({ route }) => {
+            const animation = route.params?.animation || 'slide_from_right'
+            return { animation }
+          }}
+        />
         <Stack.Screen
           name='ConnectionMessages'
           component={ConnectionMessagesScreen}
         />
-        <Stack.Screen name='Settings' component={SettingsScreen} />
+        <Stack.Screen
+          name='Settings'
+          component={SettingsScreen}
+          options={({ route }) => {
+            const animation = route.params?.animation || 'slide_from_right'
+            return { animation }
+          }}
+        />
         <Stack.Screen name='SettingsAvatar' component={SettingsAvatarScreen} />
         <Stack.Screen
           name='SettingsProfile'

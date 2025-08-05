@@ -63,7 +63,7 @@ export default function OnboardingPreviewScreen ({ navigation, route }) {
 
     try {
       // Add any final onboarding completion logic here
-      console.log('🎉 Onboarding completed for user:', meData)
+      console.log('Onboarding completed for user:', meData)
 
       // Navigate to connections screen with auto-open modal flag
       navigation.navigate('Connections', { autoOpenModal: true })

@@ -38,7 +38,7 @@ export default function OnboardingProfileScreen ({ navigation }) {
 
     try {
       // Save profile data to API
-      console.log('📝 Saving profile:', {
+      console.log('Saving profile:', {
         firstName: firstName.trim(),
         lastName: lastName.trim()
       })
@@ -53,7 +53,7 @@ export default function OnboardingProfileScreen ({ navigation }) {
         authToken
       )
 
-      console.log('✅ Profile saved successfully')
+      console.log('Profile saved successfully')
 
       // Navigate to photo upload screen with profile data
       navigation.navigate('OnboardingPhoto', {

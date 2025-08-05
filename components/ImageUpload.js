@@ -73,7 +73,7 @@ const ImageUpload = forwardRef(
           setSelectedImage(imageAsset)
           setUploadError(false)
           onImageSelected(imageAsset)
-          console.log('📸 Selected image from camera:', imageAsset.uri)
+          console.log('Selected image from camera:', imageAsset.uri)
         }
       } catch (error) {
         console.error('❌ Camera error:', error)
@@ -98,7 +98,7 @@ const ImageUpload = forwardRef(
           setSelectedImage(imageAsset)
           setUploadError(false)
           onImageSelected(imageAsset)
-          console.log('🖼️ Selected image from gallery:', imageAsset.uri)
+          console.log('Selected image from gallery:', imageAsset.uri)
         }
       } catch (error) {
         console.error('❌ Gallery error:', error)
@@ -162,7 +162,7 @@ const ImageUpload = forwardRef(
       setUploadError(false)
 
       try {
-        console.log('🚀 Starting image upload process...')
+        console.log('Starting image upload...')
 
         // Convert image to base64
         const { base64, mimeType } = await convertImageToBase64(
@@ -183,7 +183,7 @@ const ImageUpload = forwardRef(
           )
         }
 
-        console.log('📤 Uploading image to API...', {
+        console.log('Uploading image to API...', {
           mimeType,
           size: base64.length
         })
@@ -203,7 +203,7 @@ const ImageUpload = forwardRef(
           throw new Error(uploadResponse.error || 'Failed to upload image')
         }
 
-        console.log('✅ Image uploaded successfully:', uploadResponse.data.url)
+        console.log('Image uploaded successfully:', uploadResponse.data.url)
 
         // Update user profile with new avatar URL
         const profileResponse = await api(
@@ -223,7 +223,7 @@ const ImageUpload = forwardRef(
           // Still consider it a success since the image was uploaded
         }
 
-        console.log('✅ Profile updated with new avatar')
+        console.log('Profile updated with new avatar')
 
         // Notify parent component
         onImageUploaded({

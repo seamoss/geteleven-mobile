@@ -10,7 +10,6 @@ import {
   RefreshControl
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Plus, LifeBuoy, Settings2 } from 'lucide-react-native'
 
 import { TextStyles, ComponentStyles, Colors } from '../styles/fonts'
@@ -72,39 +71,17 @@ export default function ConnectionsScreen ({ navigation, route }) {
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-    console.log('📅 Grouping connections - Current time:', now.toISOString())
-    console.log('📅 Seven days ago threshold:', sevenDaysAgo.toISOString())
-
     connections.forEach((connection, index) => {
       const isRecent = isRecentConnection(connection)
       const lastMessageDate = connection.last_message_at
         ? new Date(connection.last_message_at)
         : null
 
-      console.log(
-        `🔍 Connection ${index + 1} (${
-          connection.full_name || connection.phone_last_4
-        }):`,
-        {
-          last_message_at: connection.last_message_at,
-          parsed_date: lastMessageDate?.toISOString(),
-          is_recent: isRecent,
-          days_ago: lastMessageDate
-            ? Math.floor((now - lastMessageDate) / (1000 * 60 * 60 * 24))
-            : 'no messages'
-        }
-      )
-
       if (isRecent) {
         recent.push(connection)
       } else {
         older.push(connection)
       }
-    })
-
-    console.log('📊 Grouping results:', {
-      recent_count: recent.length,
-      older_count: older.length
     })
 
     // Sort each group by last message date (most recent first)
@@ -141,19 +118,6 @@ export default function ConnectionsScreen ({ navigation, route }) {
       // Use only real connections from API
       const realConnections = connectionsResponse.data || []
       setConnectionData(realConnections)
-
-      // Debug: Log connection data structure
-      console.log('✅ Fetched data:', {
-        user: meResponse.data?.first_name,
-        connections: realConnections.length,
-        isRefresh
-      })
-
-      // Debug: Log first connection to see data structure
-      if (realConnections.length > 0) {
-        console.log('🔍 First connection data structure:', realConnections[0])
-        console.log('🔍 Available keys:', Object.keys(realConnections[0]))
-      }
     } catch (error) {
       console.error('❌ Error fetching data:', error)
       Alert.alert('Error', 'Failed to load connections')
@@ -181,9 +145,6 @@ export default function ConnectionsScreen ({ navigation, route }) {
   // Auto-open modal when coming from onboarding
   useEffect(() => {
     if (autoOpenModal && meData && !loading) {
-      console.log(
-        '🎉 Auto-opening add connection modal after onboarding completion'
-      )
       setInviteVisible(true)
 
       // Clear the route param to prevent re-opening on future navigations
@@ -193,7 +154,6 @@ export default function ConnectionsScreen ({ navigation, route }) {
   }, [autoOpenModal, meData, loading])
 
   const handleConnectionPress = connectionId => {
-    console.log('Connection pressed:', connectionId)
     navigate('ConnectionMessages', { connectionId })
   }
 

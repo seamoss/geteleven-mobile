@@ -24,7 +24,7 @@ import Loader from '../components/Loader'
 
 // Inner component that has access to PlaybackProvider context
 function ConnectionMessagesScreenInner () {
-  const { navigate, loading, setLoading } = useTransition()
+  const { navigate, back, loading, setLoading } = useTransition()
   const route = useRoute()
   const { connectionId } = route.params
   const { stopAll, cleanup } = usePlayback()
@@ -35,7 +35,7 @@ function ConnectionMessagesScreenInner () {
   // Handle close button - stop all audio before navigating
   const handleClose = () => {
     stopAll()
-    navigate('Connections')
+    back()
   }
 
   // Cleanup audio when component unmounts (safety net)

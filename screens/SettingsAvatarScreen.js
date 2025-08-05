@@ -61,12 +61,10 @@ export default function SettingsAvatarScreen () {
   }, [authToken, isAuthenticated])
 
   const handleImageSelected = imageAsset => {
-    console.log('🖼️ New avatar selected:', imageAsset.uri)
     setReadyToSave(true)
   }
 
   const handleImageUploaded = uploadData => {
-    console.log('✅ Avatar updated successfully:', uploadData.url)
     setReadyToSave(false)
     navigate('Settings')
   }
@@ -104,7 +102,7 @@ export default function SettingsAvatarScreen () {
         <Text style={styles.headerTitle}>Your avatar</Text>
         <TouchableOpacity
           style={styles.closeButton}
-          onPress={() => navigate('Settings')}
+          onPress={() => navigate('Settings', { animation: 'slide_from_left' })}
         >
           <X size={20} color={Colors.foreground} />
         </TouchableOpacity>

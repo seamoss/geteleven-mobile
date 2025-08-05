@@ -258,7 +258,9 @@ export default function DebugSettingsScreen () {
           <Text style={styles.header}>Debug Settings</Text>
           <TouchableOpacity
             style={styles.closeButton}
-            onPress={() => navigate('Settings')}
+            onPress={() =>
+              navigate('Settings', { animation: 'slide_from_left' })
+            }
           >
             <X size={20} color={Colors.foreground} />
           </TouchableOpacity>

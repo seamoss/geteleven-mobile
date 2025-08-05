@@ -131,7 +131,9 @@ const SettingsProfileScreen = ({ navigation }) => {
         <Text style={styles.headerTitle}>Your information</Text>
         <TouchableOpacity
           style={styles.closeButton}
-          onPress={() => navigation.navigate('Settings')}
+          onPress={() =>
+            navigation.navigate('Settings', { animation: 'slide_from_left' })
+          }
         >
           <X size={20} color={Colors.foreground} />
         </TouchableOpacity>

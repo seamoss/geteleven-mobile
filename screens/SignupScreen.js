@@ -56,17 +56,17 @@ export default function SignupScreen ({ navigation }) {
       const cleanPhone = phone.replace(/\D/g, '')
       const countryCode = countries[selectedCountry].secondary
 
-      console.log('📱 Sending OTP request:', {
+      console.log('Sending OTP request:', {
         countryCode,
         phone: cleanPhone,
         fullNumber: `${countryCode}${cleanPhone}`
       })
 
       // Check if user already exists
-      console.log('🔍 Checking if user exists...')
+      console.log('Checking if user exists...')
       const userCheck = await checkUser(countryCode, cleanPhone)
 
-      console.log('✅ User check response:', userCheck)
+      console.log('User check response:', userCheck)
 
       if (userCheck.error) {
         console.error('❌ User check failed:', userCheck.error)
@@ -74,27 +74,27 @@ export default function SignupScreen ({ navigation }) {
       }
 
       if (userCheck.data?.exists) {
-        console.log('⚠️ User already exists')
+        console.log('User already exists')
         Alert.alert('Error', 'User already exists. Please sign in instead.')
         setLoading(false)
         return
       }
 
       // Send OTP
-      console.log('📤 Sending OTP...')
+      console.log('Sending OTP...')
       const otpResponse = await sendOTP(countryCode, cleanPhone)
 
-      console.log('✅ OTP sent successfully:', otpResponse)
+      console.log('OTP sent successfully:', otpResponse)
 
       if (otpResponse.error) {
-        console.error('❌ OTP sending failed:', otpResponse.error)
+        console.error('OTP sending failed:', otpResponse.error)
         throw new Error(otpResponse.error)
       }
 
       setStep('verify')
       setLoading(false)
     } catch (error) {
-      console.error('❌ Send OTP error:', error)
+      console.error('Send OTP error:', error)
       setHasError(true)
       setLoading(false)
       Alert.alert(
@@ -117,7 +117,7 @@ export default function SignupScreen ({ navigation }) {
       const cleanPhone = phone.replace(/\D/g, '')
       const countryCode = countries[selectedCountry].secondary
 
-      console.log('🔐 Verifying OTP:', {
+      console.log('Verifying OTP:', {
         countryCode,
         phone: cleanPhone,
         otp,
@@ -132,30 +132,30 @@ export default function SignupScreen ({ navigation }) {
         createManager: true // Creating new accounts as "Pro" for early access
       })
 
-      console.log('✅ OTP verification response:', result)
+      console.log('OTP verification response:', result)
 
       if (result.error) {
-        console.error('❌ OTP verification failed:', result.error)
+        console.error('OTP verification failed:', result.error)
         throw new Error(result.error)
       }
 
       if (result.data?.authToken) {
-        console.log('🎉 Authentication successful! Storing token...')
+        console.log('Authentication successful! Storing token...')
 
         // Store auth token
         await AsyncStorage.setItem('authToken', result.data.authToken)
 
-        console.log('🚀 Navigating to onboarding...')
+        console.log('Navigating to onboarding...')
         // Navigate to onboarding flow for new users
         navigation.navigate('OnboardingWelcome')
       } else {
-        console.warn('⚠️ No auth token received')
+        console.warn('No auth token received')
         Alert.alert('Error', 'Invalid verification code')
       }
 
       setLoading(false)
     } catch (error) {
-      console.error('❌ Verify OTP error:', error)
+      console.error('Verify OTP error:', error)
       setHasError(true)
       setLoading(false)
       Alert.alert(
@@ -242,7 +242,9 @@ export default function SignupScreen ({ navigation }) {
 
               <TouchableOpacity
                 style={[styles.button, styles.lightButton]}
-                onPress={() => navigation.navigate('Home')}
+                onPress={() =>
+                  navigation.navigate('Home', { animation: 'slide_from_left' })
+                }
               >
                 <Text style={styles.lightButtonText}>Go back</Text>
               </TouchableOpacity>

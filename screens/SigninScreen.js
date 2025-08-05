@@ -229,7 +229,9 @@ export default function SigninScreen ({ navigation }) {
 
               <TouchableOpacity
                 style={[styles.button, styles.lightButton]}
-                onPress={() => navigation.navigate('Home')}
+                onPress={() =>
+                  navigation.navigate('Home', { animation: 'slide_from_left' })
+                }
               >
                 <Text style={styles.lightButtonText}>Go back</Text>
               </TouchableOpacity>

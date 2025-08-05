@@ -20,6 +20,7 @@ export default function navTransition () {
       }
 
       const screenName = screenMap[screen] || screen
+
       navigation.navigate(screenName, params)
       setLoading(false)
     },
