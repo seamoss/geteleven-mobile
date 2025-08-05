@@ -1,5 +1,5 @@
 import React from 'react'
-import { TextInput, StyleSheet } from 'react-native'
+import { View, Text, TextInput, StyleSheet } from 'react-native'
 import { Colors, TextStyles } from '../styles/fonts'
 
 const PhoneInput = ({
@@ -9,6 +9,7 @@ const PhoneInput = ({
   hasError = false,
   mask = null,
   countryCode = 'US',
+  prefix = null,
   ...otherProps
 }) => {
   const applyMask = (text, maskPattern) => {
@@ -61,6 +62,29 @@ const PhoneInput = ({
     onChangeText(maskedText)
   }
 
+  if (prefix) {
+    return (
+      <View
+        style={[styles.inputContainer, hasError && styles.inputContainerError]}
+      >
+        <Text style={styles.prefix}>{prefix}</Text>
+        <TextInput
+          style={styles.inputWithPrefix}
+          value={value}
+          onChangeText={handleTextChange}
+          placeholder={placeholder}
+          placeholderTextColor={Colors.copy}
+          keyboardType='phone-pad'
+          textContentType='telephoneNumber'
+          autoComplete='tel'
+          autoCorrect={false}
+          maxLength={20} // Reasonable max length for phone numbers
+          returnKeyType='done'
+        />
+      </View>
+    )
+  }
+
   return (
     <TextInput
       style={[styles.input, hasError && styles.inputError]}
@@ -96,6 +120,36 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: Colors.error,
     backgroundColor: '#ffe6e6'
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    backgroundColor: Colors.white,
+    paddingLeft: 18,
+    width: '100%'
+  },
+  inputContainerError: {
+    borderColor: Colors.error,
+    backgroundColor: '#ffe6e6'
+  },
+  prefix: {
+    fontSize: TextStyles.buttonDark.fontSize,
+    fontWeight: TextStyles.buttonDark.fontWeight,
+    fontFamily: TextStyles.buttonDark.fontFamily,
+    color: '#64748B',
+    marginRight: 10
+  },
+  inputWithPrefix: {
+    flex: 1,
+    fontSize: TextStyles.buttonDark.fontSize,
+    fontWeight: TextStyles.buttonDark.fontWeight,
+    fontFamily: TextStyles.buttonDark.fontFamily,
+    paddingHorizontal: 0,
+    paddingVertical: 16,
+    color: Colors.foreground
   }
 })
 

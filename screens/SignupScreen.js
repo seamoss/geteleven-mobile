@@ -218,6 +218,7 @@ export default function SignupScreen ({ navigation }) {
                   placeholder='Enter your phone number'
                   hasError={hasError}
                   countryCode={selectedCountry}
+                  prefix='+1'
                 />
               </View>
             </ScrollView>
