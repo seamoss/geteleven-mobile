@@ -33,20 +33,33 @@ const OTPInput = ({ value, onChangeText, hasError = false }) => {
       }
     }
     // Handle multiple digits (paste scenario)
-    else if (numericText.length > 1 && index === 0) {
-      const newDigits = numericText.slice(0, 4).split('')
-      // Pad with empty strings if less than 4 digits
-      while (newDigits.length < 4) {
-        newDigits.push('')
-      }
+    else if (numericText.length > 1) {
+      // Get remaining slots from current position
+      const remainingSlots = 4 - index
+      const pastedDigits = numericText.slice(0, remainingSlots).split('')
+      
+      // Create new digits array keeping existing values before paste position
+      const newDigits = [...digits]
+      
+      // Fill from current position onwards
+      pastedDigits.forEach((digit, i) => {
+        if (index + i < 4) {
+          newDigits[index + i] = digit
+        }
+      })
+      
       setDigits(newDigits)
       onChangeText(newDigits.join(''))
 
-      // Focus the next empty box or last box
-      const nextEmptyIndex = newDigits.findIndex(digit => digit === '')
-      const focusIndex = nextEmptyIndex !== -1 ? nextEmptyIndex : 3
-      inputRefs.current[focusIndex]?.focus()
-      setFocusedIndex(focusIndex)
+      // Focus the next empty box after pasted content or last box
+      const lastFilledIndex = Math.min(index + pastedDigits.length - 1, 3)
+      const nextEmptyIndex = newDigits.findIndex((digit, i) => i > lastFilledIndex && digit === '')
+      const focusIndex = nextEmptyIndex !== -1 ? nextEmptyIndex : Math.min(lastFilledIndex + 1, 3)
+      
+      if (focusIndex < 4) {
+        inputRefs.current[focusIndex]?.focus()
+        setFocusedIndex(focusIndex)
+      }
     }
     // Handle empty input (deletion)
     else if (numericText.length === 0) {
@@ -106,7 +119,6 @@ const OTPInput = ({ value, onChangeText, hasError = false }) => {
           onKeyPress={e => handleKeyPress(e, index)}
           onFocus={() => handleFocus(index)}
           keyboardType='number-pad'
-          maxLength={1}
           textAlign='center'
           selectTextOnFocus={true}
           autoFocus={index === 0}
