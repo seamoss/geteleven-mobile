@@ -61,7 +61,7 @@ export default function OnboardingProfileScreen ({ navigation }) {
         lastName: lastName.trim()
       })
     } catch (error) {
-      console.error('❌ Profile setup error:', error)
+      console.error('Profile setup error:', error)
       Alert.alert('Error', 'Failed to save your profile. Please try again.')
     } finally {
       setLoading(false)

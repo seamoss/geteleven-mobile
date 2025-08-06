@@ -76,7 +76,7 @@ const ImageUpload = forwardRef(
           console.log('Selected image from camera:', imageAsset.uri)
         }
       } catch (error) {
-        console.error('❌ Camera error:', error)
+        console.error('Camera error:', error)
         Alert.alert('Error', 'Failed to take photo. Please try again.')
       }
     }
@@ -101,7 +101,7 @@ const ImageUpload = forwardRef(
           console.log('Selected image from gallery:', imageAsset.uri)
         }
       } catch (error) {
-        console.error('❌ Gallery error:', error)
+        console.error('Gallery error:', error)
         Alert.alert('Error', 'Failed to select photo. Please try again.')
       }
     }
@@ -233,7 +233,7 @@ const ImageUpload = forwardRef(
 
         return true
       } catch (error) {
-        console.error('❌ Image upload failed:', error)
+        console.error('Image upload failed:', error)
         setUploadError(true)
         Alert.alert(
           'Upload Failed',

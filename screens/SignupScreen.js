@@ -69,7 +69,7 @@ export default function SignupScreen ({ navigation }) {
       console.log('User check response:', userCheck)
 
       if (userCheck.error) {
-        console.error('❌ User check failed:', userCheck.error)
+        console.error('User check failed:', userCheck.error)
         throw new Error(userCheck.error)
       }
 

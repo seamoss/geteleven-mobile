@@ -18,6 +18,7 @@ import User from '../hooks/user'
 import navTransition from '../hooks/transition'
 import ElevenAvatar from '../components/ElevenAvatar'
 import AddConnectionModal from '../components/AddConnectionModal'
+import UpgradeModal from '../components/UpgradeModal'
 import { replaceDomain } from '../lib/util'
 import { getResponsiveSpacing, scale, isSmallDevice } from '../utils/responsive'
 
@@ -29,6 +30,7 @@ export default function ConnectionsScreen ({ navigation, route }) {
   const [meData, setMeData] = useState(null)
   const [connectionData, setConnectionData] = useState([])
   const [inviteVisible, setInviteVisible] = useState(false)
+  const [upgradeVisible, setUpgradeVisible] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
   // Get route params to check if we should auto-open the modal
@@ -119,7 +121,7 @@ export default function ConnectionsScreen ({ navigation, route }) {
       const realConnections = connectionsResponse.data || []
       setConnectionData(realConnections)
     } catch (error) {
-      console.error('❌ Error fetching data:', error)
+      console.error('Error fetching data:', error)
       Alert.alert('Error', 'Failed to load connections')
     } finally {
       if (isRefresh) {
@@ -232,13 +234,13 @@ export default function ConnectionsScreen ({ navigation, route }) {
                   const avatarUrl = connection.avatar_url
                     ? replaceDomain(
                         connection.avatar_url,
-                        'ik.imagekit.io/geteleven/tr:h-300'
+                        'ik.imagekit.io/geteleven/tr:h-500'
                       )
                     : null
 
                   // Calculate responsive avatar size based on screen size
-                  const avatarWidth = scale(isSmallDevice ? 170 : 177)
-                  const avatarHeight = scale(isSmallDevice ? 210 : 240)
+                  const avatarWidth = scale(isSmallDevice ? 180 : 197)
+                  const avatarHeight = scale(isSmallDevice ? 190 : 220)
 
                   return (
                     <TouchableOpacity
@@ -293,6 +295,32 @@ export default function ConnectionsScreen ({ navigation, route }) {
                         )}
                       </View>
                     )}
+                    {/* Upgrade Callout - Only show if not a manager */}
+                    {meData && meData.manager && (
+                      <View style={styles.upgradeCallout}>
+                        <View style={styles.upgradeCalloutContent}>
+                          <View style={styles.upgradeCalloutLeft}>
+                            <View style={styles.proBadge}>
+                              <Text style={styles.proBadgeText}>Pro</Text>
+                            </View>
+                            <Text style={styles.upgradeHeader}>
+                              Need more connections?
+                            </Text>
+                            <Text style={styles.upgradeText}>
+                              Get unlimited invites and more when you upgrade.
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.upgradeButton}
+                            onPress={() => setUpgradeVisible(true)}
+                          >
+                            <Text style={styles.upgradeButtonText}>
+                              Upgrade
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
                   </>
                 )
               })()
@@ -334,6 +362,12 @@ export default function ConnectionsScreen ({ navigation, route }) {
         visible={inviteVisible}
         onClose={() => setInviteVisible(false)}
         user={meData}
+      />
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        visible={upgradeVisible}
+        onClose={() => setUpgradeVisible(false)}
       />
     </SafeAreaView>
   )
@@ -468,6 +502,72 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: Colors.copy,
     marginTop: 8,
+    textAlign: 'center'
+  },
+  upgradeCallout: {
+    display: 'flex',
+    padding: 20,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 20,
+    alignItems: 'center',
+    gap: 4
+  },
+  upgradeCalloutContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    gap: 20
+  },
+  upgradeCalloutLeft: {
+    flex: 1,
+    alignItems: 'flex-start',
+    gap: 6
+  },
+  proBadge: {
+    display: 'flex',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    backgroundColor: Colors.foreground,
+    borderRadius: 24,
+    justifyContent: 'center',
+    marginBottom: 8
+  },
+  proBadgeText: {
+    color: Colors.background,
+    textTransform: 'uppercase',
+    fontSize: 10,
+    fontWeight: '500'
+  },
+  upgradeHeader: {
+    ...TextStyles.title,
+    display: 'flex',
+    flexDirection: 'column',
+    textAlign: 'left',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 0
+  },
+  upgradeText: {
+    ...TextStyles.body,
+    fontSize: 14,
+    fontWeight: '400',
+    textAlign: 'left',
+    color: Colors.copy
+  },
+  upgradeButton: {
+    display: 'flex',
+    alignItems: 'center',
+    backgroundColor: TextStyles.buttonLight.color,
+    paddingHorizontal: getResponsiveSpacing.elementSpacing - 8,
+    paddingVertical: getResponsiveSpacing.elementSpacing * 0.5,
+    borderRadius: 8
+  },
+  upgradeButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
     textAlign: 'center'
   }
 })

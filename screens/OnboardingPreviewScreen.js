@@ -68,7 +68,7 @@ export default function OnboardingPreviewScreen ({ navigation, route }) {
       // Navigate to connections screen with auto-open modal flag
       navigation.navigate('Connections', { autoOpenModal: true })
     } catch (error) {
-      console.error('❌ Error completing onboarding:', error)
+      console.error('Error completing onboarding:', error)
     } finally {
       setIsFinishing(false)
     }
