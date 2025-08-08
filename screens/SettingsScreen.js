@@ -18,13 +18,15 @@ import {
   Send,
   X,
   LogOut,
-  Bug
+  Bug,
+  CreditCard
 } from 'lucide-react-native'
 import { authCheck, signOut } from '../lib/auth'
 import { replaceDomain, formatAvatarName } from '../lib/util'
 import { TextStyles, Colors } from '../styles/fonts'
 import useTransition from '../hooks/transition'
 import User from '../hooks/user'
+import useSubscription from '../hooks/useSubscription'
 import ElevenAvatar from '../components/ElevenAvatar'
 import Loader from '../components/Loader'
 import { DEBUG_ENABLED } from '../lib/config'
@@ -59,6 +61,11 @@ export default function SettingsScreen () {
 
   const { isAuthenticated, authToken, checkingAuth } = authCheck()
   const { me } = User(authToken)
+  const {
+    hasActiveSubscription,
+    cancelSubscription,
+    isLoading: subscriptionLoading
+  } = useSubscription()
 
   useEffect(() => {
     setLoading(true)
@@ -146,6 +153,45 @@ export default function SettingsScreen () {
 
   const handleDebugPress = () => {
     navigate('DebugSettings')
+  }
+
+  const handleCancelSubscriptionPress = () => {
+    Alert.alert(
+      'Cancel Subscription',
+      'Are you sure you want to cancel your Pro subscription? You will lose access to unlimited invites and other Pro features.',
+      [
+        {
+          text: 'Keep Subscription',
+          style: 'cancel'
+        },
+        {
+          text: 'Cancel Subscription',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await cancelSubscription()
+              if (result) {
+                Alert.alert(
+                  'Subscription Cancelled',
+                  'Your subscription has been cancelled. You will continue to have access to Pro features until the end of your current billing period.',
+                  [{ text: 'OK', onPress: () => fetchUserData() }]
+                )
+              } else {
+                Alert.alert(
+                  'Error',
+                  'Failed to cancel subscription. Please try again or contact support.'
+                )
+              }
+            } catch (error) {
+              Alert.alert(
+                'Error',
+                'Failed to cancel subscription. Please try again or contact support.'
+              )
+            }
+          }
+        }
+      ]
+    )
   }
 
   const handleSignOutPress = () => {
@@ -273,6 +319,17 @@ export default function SettingsScreen () {
                 onPress={handleDebugPress}
               />
             )}
+            {meData &&
+              meData.manager &&
+              (meData.has_active_subscription || hasActiveSubscription) && (
+                <SettingsRow
+                  Icon={CreditCard}
+                  label='Cancel subscription'
+                  tip='Cancel your Pro subscription.'
+                  onPress={handleCancelSubscriptionPress}
+                  color='#ef4444'
+                />
+              )}
             <SettingsRow
               Icon={LogOut}
               label='Sign out'
@@ -354,7 +411,7 @@ const styles = StyleSheet.create({
     width: '100%',
     display: 'flex',
     flexDirection: 'column',
-    paddingHorizontal: 40
+    paddingHorizontal: 10
   },
   settingsRow: {
     width: '100%',

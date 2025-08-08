@@ -41,11 +41,8 @@ export default function useApplePay() {
     try {
       await InAppPurchases.connectAsync();
       
-      // Get available products (you'll need to define your product IDs)
-      const productIds = [
-        // 'com.getelevenapp.premium_monthly',
-        // 'com.getelevenapp.premium_yearly',
-      ];
+      // Get available products from feature flags
+      const productIds = getFeatureConfig('IAP_PRODUCT_IDS') || [];
       
       if (productIds.length > 0) {
         const { responseCode, results } = await InAppPurchases.getProductsAsync(productIds);

@@ -1,17 +1,56 @@
-import React, { useState } from 'react'
-import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native'
+import React, { useState, useEffect } from 'react'
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  ActivityIndicator
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { X } from 'lucide-react-native'
+import { X, RotateCw } from 'lucide-react-native'
 
 import { TextStyles, Colors } from '../styles/fonts'
 import { getResponsiveSpacing } from '../utils/responsive'
+import useSubscription from '../hooks/useSubscription'
 
-export default function UpgradeModal ({ visible, onClose }) {
+export default function UpgradeModal ({ visible, onClose, onSuccess }) {
   const [selectedPlan, setSelectedPlan] = useState('yearly')
+  const {
+    isLoading,
+    hasActiveSubscription,
+    monthlyPackage,
+    yearlyPackage,
+    monthlyPrice,
+    yearlyPrice,
+    purchaseSubscription,
+    restoreSubscription,
+    isEnabled,
+    isInitialized
+  } = useSubscription()
 
-  const handleContinueToPayment = () => {
-    // Handle payment flow here
-    console.log('Continue to payment with plan:', selectedPlan)
+  useEffect(() => {
+    // If user already has active subscription, close modal
+    if (hasActiveSubscription && visible) {
+      onClose()
+      if (onSuccess) {
+        onSuccess()
+      }
+    }
+  }, [hasActiveSubscription, visible])
+
+  const handleContinueToPayment = async () => {
+    const purchase = await purchaseSubscription(selectedPlan)
+    if (purchase) {
+      onClose()
+      if (onSuccess) {
+        onSuccess()
+      }
+    }
+  }
+
+  const handleRestore = async () => {
+    await restoreSubscription()
   }
 
   return (
@@ -50,7 +89,9 @@ export default function UpgradeModal ({ visible, onClose }) {
               >
                 <View style={styles.optionContent}>
                   <Text style={styles.planName}>Monthly</Text>
-                  <Text style={styles.planPrice}>$19.00 / month</Text>
+                  <Text style={styles.planPrice}>
+                    {monthlyPrice || '$18.99'} / month
+                  </Text>
                 </View>
               </TouchableOpacity>
 
@@ -68,17 +109,38 @@ export default function UpgradeModal ({ visible, onClose }) {
                   </View>
                   <View style={styles.optionContent}>
                     <Text style={styles.planName}>Yearly</Text>
-                    <Text style={styles.planPrice}>$188.00 / year</Text>
+                    <Text style={styles.planPrice}>
+                      {yearlyPrice || '$187.99'} / year
+                    </Text>
                   </View>
                 </View>
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity
-              style={styles.continueButton}
-              onPress={handleContinueToPayment}
+              style={styles.restoreButton}
+              onPress={handleRestore}
+              disabled={isLoading}
             >
-              <Text style={styles.continueButtonText}>Continue to payment</Text>
+              <RotateCw size={16} color={Colors.copy} strokeWidth={2} />
+              <Text style={styles.restoreButtonText}>Restore purchases</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.continueButton,
+                isLoading && styles.disabledButton
+              ]}
+              onPress={handleContinueToPayment}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color='#ffffff' />
+              ) : (
+                <Text style={styles.continueButtonText}>
+                  Continue to payment
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -195,7 +257,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     position: 'absolute',
-    bottom: 40,
+    bottom: 70,
     left: 0,
     right: 0
   },
@@ -203,5 +265,24 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600'
+  },
+  disabledButton: {
+    opacity: 0.6
+  },
+  restoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 8,
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0
+  },
+  restoreButtonText: {
+    color: Colors.copy,
+    fontSize: 14,
+    fontWeight: '500'
   }
 })

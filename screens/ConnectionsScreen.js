@@ -160,7 +160,12 @@ export default function ConnectionsScreen ({ navigation, route }) {
   }
 
   const handleInvitePress = () => {
-    setInviteVisible(true)
+    // If user is not a manager, show upgrade modal instead
+    if (meData && !meData.manager) {
+      setUpgradeVisible(true)
+    } else {
+      setInviteVisible(true)
+    }
   }
 
   const onRefresh = async () => {
@@ -239,7 +244,7 @@ export default function ConnectionsScreen ({ navigation, route }) {
                     : null
 
                   // Calculate responsive avatar size based on screen size
-                  const avatarWidth = scale(isSmallDevice ? 180 : 197)
+                  const avatarWidth = scale(isSmallDevice ? 180 : 187)
                   const avatarHeight = scale(isSmallDevice ? 190 : 220)
 
                   return (
@@ -296,7 +301,7 @@ export default function ConnectionsScreen ({ navigation, route }) {
                       </View>
                     )}
                     {/* Upgrade Callout - Only show if not a manager */}
-                    {meData && meData.manager && (
+                    {meData && !meData.manager && (
                       <View style={styles.upgradeCallout}>
                         <View style={styles.upgradeCalloutContent}>
                           <View style={styles.upgradeCalloutLeft}>
@@ -327,14 +332,14 @@ export default function ConnectionsScreen ({ navigation, route }) {
             ) : (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateText}>No connections yet</Text>
-                {meData && meData.manager && (
-                  <TouchableOpacity
-                    style={styles.inviteButton}
-                    onPress={handleInvitePress}
-                  >
-                    <Text style={styles.inviteButtonText}>Invite someone</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={styles.inviteButton}
+                  onPress={handleInvitePress}
+                >
+                  <Text style={styles.inviteButtonText}>
+                    {meData && !meData.manager ? 'Upgrade to invite' : 'Invite someone'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -368,6 +373,10 @@ export default function ConnectionsScreen ({ navigation, route }) {
       <UpgradeModal
         visible={upgradeVisible}
         onClose={() => setUpgradeVisible(false)}
+        onSuccess={() => {
+          // Refresh user data to update manager status
+          fetchData(false)
+        }}
       />
     </SafeAreaView>
   )
