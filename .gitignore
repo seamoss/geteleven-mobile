@@ -40,3 +40,6 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 /ios
+/.env
+/.env.development
+/.env.production
