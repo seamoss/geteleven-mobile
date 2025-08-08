@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   RefreshControl
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useFocusEffect } from '@react-navigation/native'
 import { Plus, LifeBuoy, Settings2 } from 'lucide-react-native'
 
 import { TextStyles, ComponentStyles, Colors } from '../styles/fonts'
@@ -143,6 +144,26 @@ export default function ConnectionsScreen ({ navigation, route }) {
 
     fetchData(false)
   }, [isAuthenticated, checkingAuth])
+
+  // Refresh connections when screen comes into focus
+  // This is especially important after sending a message to a new connection
+  useFocusEffect(
+    useCallback(() => {
+      // Only refresh if we're authenticated and have already loaded initial data
+      if (isAuthenticated && meData && !checkingAuth) {
+        // Fetch connections but don't show loading state for better UX
+        connections()
+          .then(connectionsResponse => {
+            if (connectionsResponse.data) {
+              setConnectionData(connectionsResponse.data)
+            }
+          })
+          .catch(err => {
+            console.log('Failed to refresh connections on focus:', err)
+          })
+      }
+    }, [isAuthenticated, meData, checkingAuth, authToken])
+  )
 
   // Auto-open modal when coming from onboarding
   useEffect(() => {
@@ -337,7 +358,9 @@ export default function ConnectionsScreen ({ navigation, route }) {
                   onPress={handleInvitePress}
                 >
                   <Text style={styles.inviteButtonText}>
-                    {meData && !meData.manager ? 'Upgrade to invite' : 'Invite someone'}
+                    {meData && !meData.manager
+                      ? 'Upgrade to invite'
+                      : 'Invite someone'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -458,7 +481,7 @@ const styles = StyleSheet.create({
     width: '48%', // Exactly half the screen width minus small gap
     alignItems: 'center', // Align to left edge
     justifyContent: 'center',
-    marginBottom: scale(20),
+    marginBottom: scale(10),
     marginTop: 0
   },
   emptyState: {

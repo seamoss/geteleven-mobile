@@ -1,10 +1,12 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import * as Linking from 'expo-linking'
 import { initializeAudioMode } from './utils/audioUtils'
 import { initializeAutoUpdates } from './utils/updateUtils'
 import { useFonts } from 'expo-font'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
   Inter_300Light,
   Inter_400Regular,
@@ -38,7 +40,37 @@ import OnboardingPreviewScreen from './screens/OnboardingPreviewScreen'
 
 const Stack = createNativeStackNavigator()
 
+const linking = {
+  prefixes: [
+    Linking.createURL('/'),
+    'eleven://',
+    'https://getelevenapp.com',
+    'https://www.getelevenapp.com'
+  ],
+  config: {
+    screens: {
+      Home: {
+        path: 'home',
+        parse: {
+          recordForUserId: (userId) => ({ recordForUserId: userId })
+        }
+      },
+      ConnectionMessages: {
+        path: 'profile/:connectionId',
+        parse: {
+          connectionId: (connectionId) => connectionId,
+          autoRecord: () => true
+        }
+      }
+    }
+  }
+}
+
 export default function App () {
+  const navigationRef = useRef()
+  const [isReady, setIsReady] = useState(false)
+  const [initialUrl, setInitialUrl] = useState(null)
+  
   const [fontsLoaded] = useFonts({
     Inter_300Light,
     Inter_400Regular,
@@ -55,14 +87,74 @@ export default function App () {
   useEffect(() => {
     initializeAutoUpdates()
     initializeAudioMode()
+    
+    // Get initial URL if app was opened from a deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        setInitialUrl(url)
+      }
+    })
+    
+    // Listen for URL changes while app is open
+    const subscription = Linking.addEventListener('url', handleDeepLink)
+    
+    return () => {
+      subscription.remove()
+    }
   }, [])
+  
+  const handleDeepLink = (event) => {
+    if (navigationRef.current && isReady) {
+      const parsed = Linking.parse(event.url)
+      
+      // Extract connectionId from the URL path
+      if (parsed.path && parsed.path.includes('profile/')) {
+        const connectionId = parsed.path.split('profile/')[1]
+        if (connectionId) {
+          navigateToRecording(connectionId)
+        }
+      }
+    }
+  }
+  
+  const navigateToRecording = async (connectionId) => {
+    // Check if user is logged in
+    const authToken = await AsyncStorage.getItem('authToken')
+    
+    if (!authToken) {
+      // Navigate to signup first (supports both new and existing users), then to recording
+      navigationRef.current?.navigate('Signup', { 
+        redirectTo: 'ConnectionMessages',
+        redirectParams: { 
+          connectionId: connectionId, 
+          autoRecord: true 
+        }
+      })
+    } else {
+      // Navigate directly to ConnectionMessages with autoRecord flag
+      navigationRef.current?.navigate('ConnectionMessages', {
+        connectionId: connectionId,
+        autoRecord: true
+      })
+    }
+  }
 
   if (!fontsLoaded) {
     return null // Or a loading screen
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer 
+      ref={navigationRef}
+      linking={linking}
+      onReady={() => {
+        setIsReady(true)
+        // Handle initial URL if app was opened from deep link
+        if (initialUrl) {
+          handleDeepLink({ url: initialUrl })
+        }
+      }}
+    >
       <Stack.Navigator
         initialRouteName='Home'
         screenOptions={{

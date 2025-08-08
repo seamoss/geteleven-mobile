@@ -26,11 +26,16 @@ import Loader from '../components/Loader'
 function ConnectionMessagesScreenInner () {
   const { navigate, back, loading, setLoading } = useTransition()
   const route = useRoute()
-  const { connectionId } = route.params
+  const { connectionId, autoRecord, isNewUser } = route.params || {}
   const { stopAll, cleanup } = usePlayback()
   const { isAuthenticated, authToken, checkingAuth } = authCheck()
-  const { me, connections } = User(authToken)
+  const { me, connections, getConnection } = User(authToken)
   const { getMessages, sendMessage } = Message(authToken, connectionId)
+  
+  // Debug log to verify connectionId is received
+  useEffect(() => {
+    console.log('ConnectionMessagesScreen params:', { connectionId, autoRecord, isNewUser })
+  }, [connectionId, autoRecord, isNewUser])
 
   // Handle close button - stop all audio before navigating
   const handleClose = () => {
@@ -53,6 +58,7 @@ function ConnectionMessagesScreenInner () {
   const [isInitialized, setIsInitialized] = useState(false)
   const [erroredMessages, setErroredMessages] = useState(new Set())
   const [showRecordingModal, setShowRecordingModal] = useState(false)
+  const [isNewConnection, setIsNewConnection] = useState(false)
 
   // Pagination state
   const [pagination, setPagination] = useState({
@@ -87,6 +93,16 @@ function ConnectionMessagesScreenInner () {
       fetchData()
     }
   }, [isAuthenticated, checkingAuth, loading, isInitialized])
+  
+  // Handle auto-record from deep link
+  useEffect(() => {
+    if (autoRecord && isInitialized && connectionData && !showRecordingModal) {
+      // Small delay to ensure screen is fully loaded
+      setTimeout(() => {
+        setShowRecordingModal(true)
+      }, 500)
+    }
+  }, [autoRecord, isInitialized, connectionData])
 
   const fetchData = async (isRefresh = false) => {
     // Prevent multiple simultaneous fetches
@@ -124,8 +140,28 @@ function ConnectionMessagesScreenInner () {
         setMessagesData(messagesResponse.data || [])
       }
 
-      const cx = connectionsResponse.data?.find(c => c.id === connectionId)
+      // Try to find connection in the user's connections list
+      let cx = connectionsResponse.data?.find(c => c.id === connectionId)
+      let isNew = false
+      
+      // If connection not found in list (not connected yet), fetch individual connection
+      if (!cx && connectionId) {
+        console.log('Connection not in list, fetching individual connection:', connectionId)
+        isNew = true  // Mark as new connection
+        try {
+          const individualConnectionResponse = await getConnection(connectionId)
+          console.log('Individual connection response:', individualConnectionResponse)
+          if (individualConnectionResponse.data) {
+            cx = individualConnectionResponse.data
+          }
+        } catch (err) {
+          console.log('Failed to fetch individual connection for ID:', connectionId, err)
+          // Connection might not exist yet for new deep link users
+        }
+      }
+      
       setConnectionData(cx)
+      setIsNewConnection(isNew)
       setIsInitialized(true)
     } catch (err) {
       if (!isMountedRef.current) return
@@ -201,10 +237,23 @@ function ConnectionMessagesScreenInner () {
   const handleSendMessage = async recordingData => {
     try {
       // Send the message
-      const response = await sendMessage(
+      await sendMessage(
         recordingData.uri,
         recordingData.duration
       )
+
+      // If this was a new connection, we need to refresh connections list
+      if (isNewConnection) {
+        // Re-fetch connections to update the list
+        const connectionsResponse = await connections()
+        
+        // Check if the connection is now in the list
+        const nowConnected = connectionsResponse.data?.find(c => c.id === connectionId)
+        if (nowConnected) {
+          setConnectionData(nowConnected)
+          setIsNewConnection(false)  // No longer a new connection
+        }
+      }
 
       // Refresh the message feed to show the new message
       await fetchData(true)
@@ -249,7 +298,7 @@ function ConnectionMessagesScreenInner () {
         <View style={styles.headerContent}>
           <View style={styles.headerText}>
             <Text style={styles.header}>
-              {formatConnectionName(connectionData)}
+              {connectionData ? formatConnectionName(connectionData) : 'New Connection'}
             </Text>
             {connectionData?.username && (
               <Text style={styles.username}>@{connectionData.username}</Text>
@@ -304,7 +353,9 @@ function ConnectionMessagesScreenInner () {
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>
-              No messages yet. Start the conversation!
+              {autoRecord && !connectionData 
+                ? 'Send a message to connect!' 
+                : 'No messages yet. Start the conversation!'}
             </Text>
           </View>
         )}
@@ -328,6 +379,8 @@ function ConnectionMessagesScreenInner () {
         authToken={authToken}
         connectionId={connectionId}
         connection={connectionData}
+        isNewUser={isNewUser}
+        navigation={navigate}
       />
     </SafeAreaView>
   )

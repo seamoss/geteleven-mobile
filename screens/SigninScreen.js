@@ -23,9 +23,12 @@ import { getImageSize, getResponsiveSpacing } from '../utils/responsive'
 import SigninSvg from '../assets/images/svg/signin.svg'
 import LockupSvg from '../assets/images/svg/lockup.svg'
 
-export default function SigninScreen ({ navigation }) {
+export default function SigninScreen ({ navigation, route }) {
   const { countries, sendOTP, verifyOTP, checkUser } = useOTP()
   const { isAuthenticated, checkingAuth } = authCheck()
+  
+  // Get redirect params from route
+  const { redirectTo, redirectParams } = route.params || {}
 
   const [loading, setLoading] = useState(false)
   const [hasError, setHasError] = useState(false)
@@ -38,9 +41,14 @@ export default function SigninScreen ({ navigation }) {
     if (checkingAuth) return
 
     if (isAuthenticated) {
-      navigation.navigate('Connections')
+      // Handle redirect from deep link
+      if (redirectTo && redirectParams) {
+        navigation.navigate(redirectTo, redirectParams)
+      } else {
+        navigation.navigate('Connections')
+      }
     }
-  }, [isAuthenticated, checkingAuth, navigation])
+  }, [isAuthenticated, checkingAuth, navigation, redirectTo, redirectParams])
 
   const handleSendOTP = async () => {
     if (!phone.trim()) {
@@ -130,16 +138,36 @@ export default function SigninScreen ({ navigation }) {
           const hasAvatar =
             userData?.avatar_url && userData.avatar_url.trim() !== ''
 
-          if (!hasFirstName || !hasLastName || !hasAvatar) {
-            // Navigate to onboarding profile step for incomplete profiles
-            navigation.navigate('OnboardingProfile')
+          // If coming from deep link, go to recording first regardless of profile status
+          if (redirectTo && redirectParams) {
+            // Mark user as needing onboarding if profile incomplete
+            if (!hasFirstName || !hasLastName || !hasAvatar) {
+              await AsyncStorage.setItem('needsOnboarding', 'true')
+              navigation.navigate(redirectTo, { 
+                ...redirectParams, 
+                isNewUser: true 
+              })
+            } else {
+              // Complete profile, just navigate to recording
+              navigation.navigate(redirectTo, redirectParams)
+            }
           } else {
-            // Navigate to main app for users with complete profiles
-            navigation.navigate('Connections')
+            // Not from deep link - handle normal flow
+            if (!hasFirstName || !hasLastName || !hasAvatar) {
+              // Navigate to onboarding profile step for incomplete profiles
+              navigation.navigate('OnboardingProfile')
+            } else {
+              // Navigate to main app for users with complete profiles
+              navigation.navigate('Connections')
+            }
           }
         } catch (profileError) {
-          // If we can't check the profile, default to connections
-          navigation.navigate('Connections')
+          // If we can't check the profile, handle redirect or default to connections
+          if (redirectTo && redirectParams) {
+            navigation.navigate(redirectTo, redirectParams)
+          } else {
+            navigation.navigate('Connections')
+          }
         }
       } else {
         Alert.alert('Error', 'Invalid verification code')

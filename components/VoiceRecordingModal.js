@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Audio } from 'expo-av'
 import { X, Square, RotateCcw, Send, Play, Pause } from 'lucide-react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { TextStyles, Colors } from '../styles/fonts'
 import ElevenAvatar from './ElevenAvatar'
 import { formatConnectionName } from '../lib/util'
@@ -21,7 +22,9 @@ export default function VoiceRecordingModal ({
   onSend,
   authToken,
   connectionId,
-  connection
+  connection,
+  isNewUser,
+  navigation
 }) {
   const [recording, setRecording] = useState(null)
   const [isRecording, setIsRecording] = useState(false)
@@ -238,9 +241,24 @@ export default function VoiceRecordingModal ({
       // Wait for both upload progress and actual send to complete
       await Promise.all([uploadPromise, sendPromise])
 
-      // Close modal and reset
-      onClose()
-      resetRecording()
+      // If this is a new user from deep link, redirect to onboarding after successful send
+      if (isNewUser) {
+        // Clear the flag
+        await AsyncStorage.removeItem('needsOnboarding')
+        // Close modal first
+        onClose()
+        resetRecording()
+        // Small delay to ensure modal closes smoothly before navigation
+        setTimeout(() => {
+          if (navigation) {
+            navigation('OnboardingWelcome')
+          }
+        }, 300)
+      } else {
+        // Close modal and reset for existing users
+        onClose()
+        resetRecording()
+      }
     } catch (err) {
       Alert.alert('Error', 'Failed to send voice message. Please try again.')
       setIsSending(false)

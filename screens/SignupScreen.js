@@ -23,9 +23,12 @@ import { getImageSize, getResponsiveSpacing } from '../utils/responsive'
 import CreateManagerSvg from '../assets/images/svg/create-manager.svg'
 import LockupSvg from '../assets/images/svg/lockup.svg'
 
-export default function SignupScreen ({ navigation }) {
+export default function SignupScreen ({ navigation, route }) {
   const { countries, sendOTP, verifyOTP, checkUser } = useOTP()
   const { isAuthenticated, checkingAuth } = authCheck()
+  
+  // Get redirect params from route (for deep linking)
+  const { redirectTo, redirectParams } = route.params || {}
 
   const [loading, setLoading] = useState(false)
   const [hasError, setHasError] = useState(false)
@@ -38,9 +41,14 @@ export default function SignupScreen ({ navigation }) {
     if (checkingAuth) return
 
     if (isAuthenticated) {
-      navigation.navigate('Connections')
+      // Handle redirect from deep link
+      if (redirectTo && redirectParams) {
+        navigation.navigate(redirectTo, redirectParams)
+      } else {
+        navigation.navigate('Connections')
+      }
     }
-  }, [isAuthenticated, checkingAuth, navigation])
+  }, [isAuthenticated, checkingAuth, navigation, redirectTo, redirectParams])
 
   const handleSendOTP = async () => {
     if (!phone.trim()) {
@@ -74,8 +82,9 @@ export default function SignupScreen ({ navigation }) {
       }
 
       if (userCheck.data?.exists) {
-        console.log('User already exists')
-        Alert.alert('Error', 'User already exists. Please sign in instead.')
+        console.log('User already exists, redirecting to signin')
+        // If user exists, redirect to signin with same deep link params
+        navigation.navigate('Signin', { redirectTo, redirectParams })
         setLoading(false)
         return
       }
@@ -145,9 +154,19 @@ export default function SignupScreen ({ navigation }) {
         // Store auth token
         await AsyncStorage.setItem('authToken', result.data.authToken)
 
-        console.log('Navigating to onboarding...')
-        // Navigate to onboarding flow for new users
-        navigation.navigate('OnboardingWelcome')
+        // If coming from deep link, skip to recording immediately
+        if (redirectTo && redirectParams) {
+          // Store flag to indicate user needs onboarding after recording
+          await AsyncStorage.setItem('needsOnboarding', 'true')
+          navigation.navigate(redirectTo, { 
+            ...redirectParams, 
+            isNewUser: true 
+          })
+        } else {
+          console.log('Navigating to onboarding...')
+          // Navigate to onboarding flow for new users
+          navigation.navigate('OnboardingWelcome')
+        }
       } else {
         console.warn('No auth token received')
         Alert.alert('Error', 'Invalid verification code')

@@ -17,10 +17,15 @@ const config = {
       resizeMode: 'contain',
       backgroundColor: '#020617'
     },
+    scheme: 'eleven',
     ios: {
       buildNumber: '2',
       supportsTablet: true,
       bundleIdentifier: 'com.getelevenapp.mobile',
+      associatedDomains: [
+        'applinks:getelevenapp.com',
+        'applinks:www.getelevenapp.com'
+      ],
       infoPlist: {
         UILaunchStoryboardName: 'SplashScreen',
         NSCameraUsageDescription:
@@ -89,6 +94,34 @@ const config = {
       },
       edgeToEdgeEnabled: true,
       package: 'com.getelevenapp.mobile',
+      intentFilters: [
+        {
+          action: 'VIEW',
+          autoVerify: true,
+          data: [
+            {
+              scheme: 'https',
+              host: 'getelevenapp.com',
+              pathPrefix: '/profile'
+            },
+            {
+              scheme: 'https',
+              host: 'www.getelevenapp.com',
+              pathPrefix: '/profile'
+            }
+          ],
+          category: ['BROWSABLE', 'DEFAULT']
+        },
+        {
+          action: 'VIEW',
+          data: [
+            {
+              scheme: 'eleven'
+            }
+          ],
+          category: ['BROWSABLE', 'DEFAULT']
+        }
+      ],
       permissions: [
         'INTERNET',
         'RECORD_AUDIO',
