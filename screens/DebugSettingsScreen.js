@@ -5,17 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Platform
+  Linking
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import {
-  check,
-  request,
-  openSettings,
-  PERMISSIONS,
-  RESULTS
-} from 'react-native-permissions'
+import { Audio } from 'expo-av'
 import {
   X,
   Bug,
@@ -73,33 +67,7 @@ export default function DebugSettingsScreen () {
 
   const checkMicrophonePermission = async () => {
     try {
-      const permission =
-        Platform.OS === 'ios'
-          ? PERMISSIONS.IOS.MICROPHONE
-          : PERMISSIONS.ANDROID.RECORD_AUDIO
-      const result = await check(permission)
-
-      let status
-      switch (result) {
-        case RESULTS.GRANTED:
-          status = 'granted'
-          break
-        case RESULTS.DENIED:
-          status = 'denied'
-          break
-        case RESULTS.BLOCKED:
-          status = 'blocked'
-          break
-        case RESULTS.LIMITED:
-          status = 'limited'
-          break
-        case RESULTS.UNAVAILABLE:
-          status = 'unavailable'
-          break
-        default:
-          status = 'unknown'
-      }
-
+      const { status } = await Audio.getPermissionsAsync()
       setPermissionStatus(status)
 
       Alert.alert(
@@ -117,48 +85,23 @@ export default function DebugSettingsScreen () {
     setLoading(true)
 
     try {
-      const permission =
-        Platform.OS === 'ios'
-          ? PERMISSIONS.IOS.MICROPHONE
-          : PERMISSIONS.ANDROID.RECORD_AUDIO
-      const result = await request(permission)
-
-      let status
+      const { status } = await Audio.requestPermissionsAsync()
+      
       let message
-
-      switch (result) {
-        case RESULTS.GRANTED:
-          status = 'granted'
-          message =
-            'Microphone permission granted! You can now use voice features.'
+      switch (status) {
+        case 'granted':
+          message = 'Microphone permission granted! You can now use voice features.'
           break
-        case RESULTS.DENIED:
-          status = 'denied'
-          message =
-            'Microphone permission denied. Some features may not work properly.'
-          break
-        case RESULTS.BLOCKED:
-          status = 'blocked'
-          message =
-            'Microphone permission is blocked. Please enable it in device settings.'
-          break
-        case RESULTS.LIMITED:
-          status = 'limited'
-          message = 'Microphone permission granted with limitations.'
+        case 'denied':
+          message = 'Microphone permission denied. Some features may not work properly.'
           break
         default:
-          status = 'unknown'
           message = 'Unable to determine microphone permission status.'
       }
 
       setPermissionStatus(status)
 
-      Alert.alert('Permission Request Result', message, [
-        { text: 'OK' },
-        ...(status === 'blocked'
-          ? [{ text: 'Open Settings', onPress: () => openSettings() }]
-          : [])
-      ])
+      Alert.alert('Permission Request Result', message, [{ text: 'OK' }])
     } catch (error) {
       console.error('Error requesting microphone permission:', error)
       Alert.alert('Error', 'Failed to request microphone permission')
@@ -231,7 +174,7 @@ export default function DebugSettingsScreen () {
   }
 
   const openDeviceSettings = () => {
-    openSettings().catch(() => {
+    Linking.openSettings().catch(() => {
       Alert.alert('Error', 'Unable to open device settings')
     })
   }

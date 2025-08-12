@@ -5,11 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Platform,
   ScrollView
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions'
+import { Audio } from 'expo-av'
 import { TextStyles, ComponentStyles, Colors } from '../styles/fonts'
 import { getImageSize, getResponsiveSpacing } from '../utils/responsive'
 
@@ -25,23 +24,12 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
     setLoading(true)
 
     try {
-      const permission =
-        Platform.OS === 'ios'
-          ? PERMISSIONS.IOS.MICROPHONE
-          : PERMISSIONS.ANDROID.RECORD_AUDIO
-      const result = await request(permission)
-
-      switch (result) {
-        case RESULTS.GRANTED:
-          setPermissionStatus('granted')
-          break
-        case RESULTS.DENIED:
-        case RESULTS.BLOCKED:
-        case RESULTS.LIMITED:
-          setPermissionStatus('denied')
-          break
-        default:
-          setPermissionStatus('denied')
+      const { status } = await Audio.requestPermissionsAsync()
+      
+      if (status === 'granted') {
+        setPermissionStatus('granted')
+      } else {
+        setPermissionStatus('denied')
       }
     } catch (error) {
       console.error('Error requesting microphone permission:', error)
@@ -78,26 +66,14 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
   useEffect(() => {
     const checkPermission = async () => {
       try {
-        const permission =
-          Platform.OS === 'ios'
-            ? PERMISSIONS.IOS.MICROPHONE
-            : PERMISSIONS.ANDROID.RECORD_AUDIO
-        const result = await check(permission)
-
-        switch (result) {
-          case RESULTS.GRANTED:
-            setPermissionStatus('granted')
-            break
-          case RESULTS.DENIED:
-          case RESULTS.BLOCKED:
-          case RESULTS.LIMITED:
-            // Don't immediately show error state - let user try to grant permission first
-            // Only show error after they've attempted to grant and it was denied
-            setPermissionStatus('unknown')
-            break
-          case RESULTS.UNAVAILABLE:
-          default:
-            setPermissionStatus('unknown')
+        const { status } = await Audio.getPermissionsAsync()
+        
+        if (status === 'granted') {
+          setPermissionStatus('granted')
+        } else {
+          // Don't immediately show error state - let user try to grant permission first
+          // Only show error after they've attempted to grant and it was denied
+          setPermissionStatus('unknown')
         }
       } catch (error) {
         console.error('Error checking microphone permission:', error)
