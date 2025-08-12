@@ -11,17 +11,21 @@ export default function navTransition () {
       // Convert web routes to screen names
       const screenMap = {
         '/connections': 'Connections',
-        '/signup': 'Signup',
-        '/signin': 'Signin',
+        '/signup': { screen: 'Auth', params: { mode: 'signup', ...params } },
+        '/signin': { screen: 'Auth', params: { mode: 'signin', ...params } },
         '/onboarding': 'Onboarding',
         '/settings': 'Settings',
         '/record': 'Record',
         ConnectionMessages: 'ConnectionMessages'
       }
 
-      const screenName = screenMap[screen] || screen
-
-      navigation.navigate(screenName, params)
+      const mapping = screenMap[screen] || screen
+      
+      if (typeof mapping === 'object') {
+        navigation.navigate(mapping.screen, mapping.params)
+      } else {
+        navigation.navigate(mapping, params)
+      }
       setLoading(false)
     },
     [navigation]

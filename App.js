@@ -22,8 +22,7 @@ import {
 } from '@expo-google-fonts/poppins'
 
 import HomeScreen from './screens/HomeScreen'
-import SignupScreen from './screens/SignupScreen'
-import SigninScreen from './screens/SigninScreen'
+import AuthScreen from './screens/AuthScreen'
 import ConnectionsScreen from './screens/ConnectionsScreen'
 import ConnectionMessagesScreen from './screens/ConnectionMessagesScreen'
 import SettingsScreen from './screens/SettingsScreen'
@@ -139,8 +138,9 @@ export default function App () {
     const authToken = await AsyncStorage.getItem('authToken')
     
     if (!authToken) {
-      // Navigate to signup first (supports both new and existing users), then to recording
-      navigationRef.current?.navigate('Signup', { 
+      // Navigate to auth screen first (supports both new and existing users), then to recording
+      navigationRef.current?.navigate('Auth', { 
+        mode: 'signup',
         redirectTo: 'ConnectionMessages',
         redirectParams: { 
           connectionId: connectionId, 
@@ -187,10 +187,9 @@ export default function App () {
             return { animation }
           }}
         />
-        <Stack.Screen name='Signup' component={SignupScreen} />
-        <Stack.Screen
-          name='Signin'
-          component={SigninScreen}
+        <Stack.Screen 
+          name='Auth' 
+          component={AuthScreen}
           options={({ route }) => {
             const animation = route.params?.animation || 'slide_from_right'
             return { animation }

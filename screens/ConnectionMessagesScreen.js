@@ -31,10 +31,14 @@ function ConnectionMessagesScreenInner () {
   const { isAuthenticated, authToken, checkingAuth } = authCheck()
   const { me, connections, getConnection } = User(authToken)
   const { getMessages, sendMessage } = Message(authToken, connectionId)
-  
+
   // Debug log to verify connectionId is received
   useEffect(() => {
-    console.log('ConnectionMessagesScreen params:', { connectionId, autoRecord, isNewUser })
+    console.log('ConnectionMessagesScreen params:', {
+      connectionId,
+      autoRecord,
+      isNewUser
+    })
   }, [connectionId, autoRecord, isNewUser])
 
   // Handle close button - stop all audio before navigating
@@ -85,7 +89,7 @@ function ConnectionMessagesScreenInner () {
     if (checkingAuth || loading || !isMountedRef.current) return
 
     if (!isAuthenticated) {
-      navigate('Signin', { connectionId })
+      navigate('/signin', { connectionId })
       return
     }
 
@@ -93,7 +97,7 @@ function ConnectionMessagesScreenInner () {
       fetchData()
     }
   }, [isAuthenticated, checkingAuth, loading, isInitialized])
-  
+
   // Handle auto-record from deep link
   useEffect(() => {
     if (autoRecord && isInitialized && connectionData && !showRecordingModal) {
@@ -143,23 +147,33 @@ function ConnectionMessagesScreenInner () {
       // Try to find connection in the user's connections list
       let cx = connectionsResponse.data?.find(c => c.id === connectionId)
       let isNew = false
-      
+
       // If connection not found in list (not connected yet), fetch individual connection
       if (!cx && connectionId) {
-        console.log('Connection not in list, fetching individual connection:', connectionId)
-        isNew = true  // Mark as new connection
+        console.log(
+          'Connection not in list, fetching individual connection:',
+          connectionId
+        )
+        isNew = true // Mark as new connection
         try {
           const individualConnectionResponse = await getConnection(connectionId)
-          console.log('Individual connection response:', individualConnectionResponse)
+          console.log(
+            'Individual connection response:',
+            individualConnectionResponse
+          )
           if (individualConnectionResponse.data) {
             cx = individualConnectionResponse.data
           }
         } catch (err) {
-          console.log('Failed to fetch individual connection for ID:', connectionId, err)
+          console.log(
+            'Failed to fetch individual connection for ID:',
+            connectionId,
+            err
+          )
           // Connection might not exist yet for new deep link users
         }
       }
-      
+
       setConnectionData(cx)
       setIsNewConnection(isNew)
       setIsInitialized(true)
@@ -237,21 +251,20 @@ function ConnectionMessagesScreenInner () {
   const handleSendMessage = async recordingData => {
     try {
       // Send the message
-      await sendMessage(
-        recordingData.uri,
-        recordingData.duration
-      )
+      await sendMessage(recordingData.uri, recordingData.duration)
 
       // If this was a new connection, we need to refresh connections list
       if (isNewConnection) {
         // Re-fetch connections to update the list
         const connectionsResponse = await connections()
-        
+
         // Check if the connection is now in the list
-        const nowConnected = connectionsResponse.data?.find(c => c.id === connectionId)
+        const nowConnected = connectionsResponse.data?.find(
+          c => c.id === connectionId
+        )
         if (nowConnected) {
           setConnectionData(nowConnected)
-          setIsNewConnection(false)  // No longer a new connection
+          setIsNewConnection(false) // No longer a new connection
         }
       }
 
@@ -298,7 +311,9 @@ function ConnectionMessagesScreenInner () {
         <View style={styles.headerContent}>
           <View style={styles.headerText}>
             <Text style={styles.header}>
-              {connectionData ? formatConnectionName(connectionData) : 'New Connection'}
+              {connectionData
+                ? formatConnectionName(connectionData)
+                : 'New Connection'}
             </Text>
             {connectionData?.username && (
               <Text style={styles.username}>@{connectionData.username}</Text>
@@ -353,8 +368,8 @@ function ConnectionMessagesScreenInner () {
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>
-              {autoRecord && !connectionData 
-                ? 'Send a message to connect!' 
+              {autoRecord && !connectionData
+                ? 'Send a message to connect!'
                 : 'No messages yet. Start the conversation!'}
             </Text>
           </View>
@@ -404,8 +419,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingTop: 20,
     paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(2, 6, 23, 0.05)',
     zIndex: 1000
   },
   scrollView: {
@@ -463,9 +476,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 100,
-    // backgroundColor: '#ffffff',
-    // borderTopWidth: 1,
-    // borderTopColor: 'rgba(2, 6, 23, 0.05)',
     paddingBottom: 50,
     paddingVertical: 0,
     paddingHorizontal: 0,

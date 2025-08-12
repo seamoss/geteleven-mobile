@@ -6,9 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  SafeAreaView,
-  StatusBar
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { X } from 'lucide-react-native'
 import { authCheck } from '../lib/auth'
@@ -23,6 +24,7 @@ const SettingsProfileScreen = ({ navigation }) => {
   const [lastName, setLastName] = useState('')
   const [originalFirstName, setOriginalFirstName] = useState('')
   const [originalLastName, setOriginalLastName] = useState('')
+  
 
   const { isAuthenticated, authToken, checkingAuth } = authCheck()
   const { me } = User(authToken)
@@ -31,9 +33,10 @@ const SettingsProfileScreen = ({ navigation }) => {
     if (checkingAuth) return
 
     if (!isAuthenticated) {
-      navigation.navigate('Signin')
+      navigation.navigate('Auth', { mode: 'signin' })
     }
   }, [isAuthenticated, authToken, checkingAuth, navigation])
+
 
   const fetchUserData = async () => {
     if (!isAuthenticated || !authToken) {
@@ -111,10 +114,10 @@ const SettingsProfileScreen = ({ navigation }) => {
   const hasProfileChanged =
     firstName !== originalFirstName || lastName !== originalLastName
 
+
   if (checkingAuth || loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle='dark-content' />
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
@@ -123,69 +126,76 @@ const SettingsProfileScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle='dark-content' />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Your information</Text>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() =>
-            navigation.navigate('Settings', { animation: 'slide_from_left' })
-          }
-        >
-          <X size={20} color={Colors.foreground} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.content}>
-        <Text style={styles.description}>
-          Let's get to know you a little better so your connections will also
-          know who you are.
-        </Text>
-
-        <View style={styles.formContainer}>
-          <TextInput
-            style={[styles.input, hasError && styles.inputError]}
-            value={firstName}
-            onChangeText={handleFirstNameChange}
-            placeholder="What's your first name?"
-            placeholderTextColor='#94A3B8'
-            autoCapitalize='words'
-          />
-
-          <TextInput
-            style={[styles.input, hasError && styles.inputError]}
-            value={lastName}
-            onChangeText={handleLastNameChange}
-            placeholder="What's your last name?"
-            placeholderTextColor='#94A3B8'
-            autoCapitalize='words'
-          />
-        </View>
-      </View>
-
-      <View style={styles.buttonGroup}>
-        <TouchableOpacity
-          style={[
-            styles.saveButton,
-            (!firstName || !lastName || loading || !hasProfileChanged) &&
-              styles.saveButtonDisabled
-          ]}
-          onPress={saveProfile}
-          disabled={!firstName || !lastName || loading || !hasProfileChanged}
-        >
-          <Text
-            style={[
-              styles.saveButtonText,
-              (!firstName || !lastName || loading || !hasProfileChanged) &&
-                styles.saveButtonTextDisabled
-            ]}
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+      <View style={styles.mainContainer}>
+        {/* Header - outside KeyboardAvoidingView */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Your information</Text>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() =>
+              navigation.navigate('Settings', { animation: 'slide_from_left' })
+            }
           >
-            {loading ? 'Saving...' : 'Save'}
-          </Text>
-        </TouchableOpacity>
+            <X size={20} color={Colors.foreground} />
+          </TouchableOpacity>
+        </View>
+
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
+          <View style={styles.content}>
+            <Text style={styles.description}>
+              Let's get to know you a little better so your connections will also
+              know who you are.
+            </Text>
+
+            <View style={styles.formContainer}>
+              <TextInput
+                style={[styles.input, hasError && styles.inputError]}
+                value={firstName}
+                onChangeText={handleFirstNameChange}
+                placeholder="What's your first name?"
+                placeholderTextColor='#94A3B8'
+                autoCapitalize='words'
+              />
+
+              <TextInput
+                style={[styles.input, hasError && styles.inputError]}
+                value={lastName}
+                onChangeText={handleLastNameChange}
+                placeholder="What's your last name?"
+                placeholderTextColor='#94A3B8'
+                autoCapitalize='words'
+              />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+
+        {/* Fixed button at bottom - outside KeyboardAvoidingView */}
+        <View style={styles.buttonGroup}>
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              (!firstName || !lastName || loading || !hasProfileChanged) &&
+                styles.saveButtonDisabled
+            ]}
+            onPress={saveProfile}
+            disabled={!firstName || !lastName || loading || !hasProfileChanged}
+          >
+            <Text
+              style={[
+                styles.saveButtonText,
+                (!firstName || !lastName || loading || !hasProfileChanged) &&
+                  styles.saveButtonTextDisabled
+              ]}
+            >
+              {loading ? 'Saving...' : 'Save'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   )
@@ -195,6 +205,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff'
+  },
+  mainContainer: {
+    flex: 1
+  },
+  keyboardAvoidingView: {
+    flex: 1
   },
   loadingContainer: {
     flex: 1,
@@ -239,7 +255,6 @@ const styles = StyleSheet.create({
   },
   buttonGroup: {
     width: '100%',
-    marginTop: 'auto',
     paddingBottom: 20,
     paddingHorizontal: 15
   },

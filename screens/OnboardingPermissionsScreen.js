@@ -85,7 +85,7 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
     checkPermission()
   }, [])
 
-  const imageSize = getImageSize(280)
+  const imageSize = getImageSize(300)
 
   return (
     <SafeAreaView style={styles.container}>

@@ -7,7 +7,6 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  ScrollView,
   KeyboardAvoidingView,
   Platform
 } from 'react-native'
@@ -71,32 +70,26 @@ export default function OnboardingProfileScreen ({ navigation }) {
     }
   }
 
-  const imageSize = getImageSize(280)
+  const imageSize = 210
 
   return (
     <SafeAreaView
       style={styles.container}
       edges={['top', 'left', 'right', 'bottom']}
     >
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
-        {/* Logo Header */}
-        <View style={styles.logoContainer}>
-          <LogoSvg width={80} height={40} />
-        </View>
+      <View style={styles.mainContainer}>
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
+          {/* Logo Header */}
+          <View style={styles.logoContainer}>
+            <LogoSvg width={80} height={40} />
+          </View>
 
-        <View style={styles.content}>
-          {/* Scrollable content area */}
-          <ScrollView
-            style={styles.scrollContent}
-            contentContainerStyle={styles.scrollContentContainer}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps='handled'
-            keyboardDismissMode='on-drag'
-          >
+          {/* Content area */}
+          <View style={styles.contentArea}>
             <View style={styles.imageContainer}>
               <OnboardingNameSvg
                 width={imageSize}
@@ -137,35 +130,39 @@ export default function OnboardingProfileScreen ({ navigation }) {
                 />
               </View>
             </View>
-          </ScrollView>
-
-          {/* Fixed buttons at bottom */}
-          <View style={styles.buttonGroup}>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.darkButton,
-                (!firstName.trim() || !lastName.trim() || loading) &&
-                  styles.disabledButton
-              ]}
-              onPress={handleContinue}
-              disabled={!firstName.trim() || !lastName.trim() || loading}
-            >
-              {loading ? (
-                <ActivityIndicator color='#fff' />
-              ) : (
-                <Text style={styles.darkButtonText}>Continue</Text>
-              )}
-            </TouchableOpacity>
           </View>
+        </KeyboardAvoidingView>
+
+        {/* Fixed buttons at bottom - outside KeyboardAvoidingView */}
+        <View style={styles.buttonGroup}>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.darkButton,
+              (!firstName.trim() || !lastName.trim() || loading) &&
+                styles.disabledButton
+            ]}
+            onPress={handleContinue}
+            disabled={!firstName.trim() || !lastName.trim() || loading}
+          >
+            {loading ? (
+              <ActivityIndicator color='#fff' />
+            ) : (
+              <Text style={styles.darkButtonText}>Continue</Text>
+            )}
+          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: ComponentStyles.container,
+
+  mainContainer: {
+    flex: 1
+  },
 
   keyboardAvoidingView: {
     flex: 1
@@ -182,14 +179,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveSpacing.horizontalPadding
   },
 
-  scrollContent: {
-    flex: 1
-  },
-
-  scrollContentContainer: {
-    flexGrow: 1,
+  contentArea: {
+    flex: 1,
     alignItems: 'center',
-    paddingBottom: getResponsiveSpacing.elementSpacing
+    justifyContent: 'center',
+    paddingHorizontal: getResponsiveSpacing.horizontalPadding,
+    paddingBottom: getResponsiveSpacing.elementSpacing,
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center'
   },
 
   imageContainer: {
@@ -212,9 +210,11 @@ const styles = StyleSheet.create({
   },
 
   inputContainer: {
-    alignSelf: 'stretch', // Use available width within container
     marginBottom: getResponsiveSpacing.titleMarginBottom * 0.8,
-    gap: getResponsiveSpacing.elementSpacing
+    gap: getResponsiveSpacing.elementSpacing,
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center'
   },
 
   inputGroup: {
@@ -236,7 +236,11 @@ const styles = StyleSheet.create({
     minHeight: 48 // Ensure good touch target
   },
 
-  buttonGroup: ComponentStyles.buttonGroup,
+  buttonGroup: {
+    ...ComponentStyles.buttonGroup,
+    paddingHorizontal: getResponsiveSpacing.horizontalPadding,
+    paddingBottom: 0
+  },
 
   button: ComponentStyles.button,
 

@@ -161,15 +161,16 @@ export default function AddConnectionModal ({ visible, onClose, user }) {
     >
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Invite someone</Text>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Add connection</Text>
+            <Text style={styles.subtitle}>
+              Share this QR code to connect with others.
+            </Text>
+          </View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <X size={24} color={Colors.foreground} strokeWidth={1.5} />
           </TouchableOpacity>
         </View>
-
-        <Text style={styles.subtitle}>
-          Share this QR code to connect with others.
-        </Text>
 
         {/* QR Code Section */}
         <View style={styles.qrContainer}>
@@ -306,26 +307,30 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: 20,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)'
+    paddingHorizontal: 15
+    // borderBottomWidth: 1,
+    // borderBottomColor: 'rgba(0, 0, 0, 0.05)'
+  },
+  headerContent: {
+    flex: 1
   },
   headerTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
     fontWeight: '500',
-    color: Colors.foreground
+    color: Colors.foreground,
+    marginBottom: 4
   },
   closeButton: {
-    padding: 8
+    padding: 8,
+    marginTop: -8
   },
   subtitle: {
     ...TextStyles.body,
     color: Colors.copy,
-    textAlign: 'center',
-    marginTop: 20
+    fontSize: 14
   },
   qrContainer: {
     flex: 1,

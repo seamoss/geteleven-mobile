@@ -38,7 +38,7 @@ export default function SettingsAvatarScreen () {
     if (checkingAuth) return
 
     if (!isAuthenticated) {
-      navigate('Signin')
+      navigate('/signin')
     }
   }, [isAuthenticated, authToken, checkingAuth, navigate])
 

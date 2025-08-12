@@ -7,7 +7,8 @@ import {
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Keyboard
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -37,6 +38,10 @@ export default function SignupScreen ({ navigation, route }) {
   const [selectedCountry] = useState('US') // Defaulting to US only
   const [otp, setOtp] = useState('')
   const [step, setStep] = useState('send') // 'send' or 'verify'
+  
+  // Keyboard state
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
 
   useEffect(() => {
     if (checkingAuth) return
@@ -50,6 +55,24 @@ export default function SignupScreen ({ navigation, route }) {
       }
     }
   }, [isAuthenticated, checkingAuth, navigation, redirectTo, redirectParams])
+
+  // Keyboard event listeners
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardVisible(true)
+      setKeyboardHeight(e.endCoordinates.height)
+    })
+    
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false)
+      setKeyboardHeight(0)
+    })
+
+    return () => {
+      showSubscription?.remove()
+      hideSubscription?.remove()
+    }
+  }, [])
 
   const handleSendOTP = async () => {
     if (!phone.trim()) {
@@ -202,7 +225,29 @@ export default function SignupScreen ({ navigation, route }) {
     )
   }
 
-  const imageSize = getImageSize(300)
+  // Get the current responsive image size - smaller when keyboard is visible
+  const imageSize = getImageSize(keyboardVisible ? 200 : 300)
+  
+  // Dynamic styles based on keyboard state
+  const getContentAreaStyles = () => ({
+    ...styles.contentArea,
+    paddingBottom: keyboardVisible ? 5 : getResponsiveSpacing.elementSpacing,
+    justifyContent: keyboardVisible ? 'flex-start' : 'center',
+    paddingTop: keyboardVisible ? 20 : 0
+  })
+  
+  const getImageContainerStyles = () => ({
+    ...styles.imageContainer,
+    marginVertical: keyboardVisible 
+      ? getResponsiveSpacing.imageMarginVertical * 0.3
+      : getResponsiveSpacing.imageMarginVertical
+  })
+  
+  const getButtonGroupStyles = () => ({
+    ...styles.buttonGroup,
+    marginTop: keyboardVisible ? 20 : 'auto',
+    marginBottom: keyboardVisible ? 10 : 0
+  })
 
   return (
     <SafeAreaView
@@ -218,8 +263,8 @@ export default function SignupScreen ({ navigation, route }) {
           {step === 'send' ? (
             <>
               {/* Content area */}
-              <View style={styles.contentArea}>
-                <View style={styles.imageContainer}>
+              <View style={getContentAreaStyles()}>
+                <View style={getImageContainerStyles()}>
                   <CreateManagerSvg
                     width={imageSize}
                     height={imageSize}
@@ -247,7 +292,7 @@ export default function SignupScreen ({ navigation, route }) {
               </View>
 
               {/* Fixed buttons at bottom */}
-              <View style={styles.buttonGroup}>
+              <View style={getButtonGroupStyles()}>
                 <TouchableOpacity
                   style={[
                     styles.button,
@@ -279,8 +324,8 @@ export default function SignupScreen ({ navigation, route }) {
           ) : (
             <>
               {/* Content area */}
-              <View style={styles.contentArea}>
-                <View style={styles.imageContainer}>
+              <View style={getContentAreaStyles()}>
+                <View style={getImageContainerStyles()}>
                   <LockupSvg
                     width={imageSize}
                     height={imageSize}
@@ -309,7 +354,7 @@ export default function SignupScreen ({ navigation, route }) {
               </View>
 
               {/* Fixed buttons at bottom */}
-              <View style={styles.buttonGroup}>
+              <View style={getButtonGroupStyles()}>
                 <TouchableOpacity
                   style={[
                     styles.button,

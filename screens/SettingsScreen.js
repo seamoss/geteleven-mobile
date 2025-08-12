@@ -75,7 +75,7 @@ export default function SettingsScreen () {
     if (checkingAuth) return
 
     if (!isAuthenticated) {
-      navigate('Signin')
+      navigate('/signin')
     }
   }, [isAuthenticated, authToken, checkingAuth, navigate])
 
@@ -210,7 +210,7 @@ export default function SettingsScreen () {
             try {
               const result = await signOut()
               if (result.success) {
-                navigate('Signin', { animation: 'slide_from_left' })
+                navigate('/signin', { animation: 'slide_from_left' })
               } else {
                 Alert.alert('Error', 'Failed to sign out. Please try again.')
               }

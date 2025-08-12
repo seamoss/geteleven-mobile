@@ -37,7 +37,7 @@ export default function OnboardingPreviewScreen ({ navigation, route }) {
     if (checkingAuth) return
 
     if (!isAuthenticated) {
-      navigate('Signin')
+      navigate('/signin')
     }
   }, [isAuthenticated, authToken, checkingAuth, navigate])
 

@@ -40,7 +40,7 @@ export default function OnboardingPhotoScreen ({ navigation, route }) {
     if (checkingAuth) return
 
     if (!isAuthenticated) {
-      navigate('Signin')
+      navigate('/signin')
     }
   }, [isAuthenticated, authToken, checkingAuth, navigate])
 

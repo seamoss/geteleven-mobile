@@ -5,8 +5,7 @@ import {
   StyleSheet,
   Modal,
   TouchableOpacity,
-  Alert,
-  Animated
+  Alert
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Audio } from 'expo-av'
@@ -15,6 +14,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { TextStyles, Colors } from '../styles/fonts'
 import ElevenAvatar from './ElevenAvatar'
 import { formatConnectionName } from '../lib/util'
+import AudioBubbleSvg from '../assets/images/svg/audio-bubble.svg'
+import { getResponsiveSpacing } from '../utils/responsive'
 
 export default function VoiceRecordingModal ({
   visible,
@@ -37,35 +38,9 @@ export default function VoiceRecordingModal ({
   const [playbackSound, setPlaybackSound] = useState(null)
   const [playbackPosition, setPlaybackPosition] = useState(0)
 
-  // Animation for recording dot
-  const pulseAnim = useRef(new Animated.Value(1)).current
+  // Timer ref for recording duration
   const timerRef = useRef(null)
   const playbackRef = useRef(false) // Prevent race conditions
-
-  // Start pulsing animation when recording
-  useEffect(() => {
-    if (isRecording) {
-      const pulse = () => {
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.3,
-            duration: 600,
-            useNativeDriver: true
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true
-          })
-        ]).start(() => {
-          if (isRecording) pulse()
-        })
-      }
-      pulse()
-    } else {
-      pulseAnim.setValue(1)
-    }
-  }, [isRecording])
 
   // Timer for recording duration
   useEffect(() => {
@@ -393,25 +368,17 @@ export default function VoiceRecordingModal ({
     >
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <View style={styles.placeholder} />
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Record message</Text>
-            {connection && (
-              <View style={styles.connectionInfo}>
-                <ElevenAvatar
-                  src={connection.avatar_url}
-                  name={formatConnectionName(connection)}
-                  showNameLabel={false}
-                  width={32}
-                  height={32}
-                  borderRadius={16}
-                  borderWidth={1}
-                />
-                <Text style={styles.connectionName}>
-                  {formatConnectionName(connection)}
-                </Text>
-              </View>
-            )}
+          <View style={styles.headerContent}>
+            <View style={styles.headerText}>
+              <Text style={styles.headerTitle}>
+                {connection
+                  ? formatConnectionName(connection)
+                  : 'Record message'}
+              </Text>
+              {connection?.username && (
+                <Text style={styles.username}>@{connection.username}</Text>
+              )}
+            </View>
           </View>
           <TouchableOpacity
             style={styles.closeButton}
@@ -424,25 +391,17 @@ export default function VoiceRecordingModal ({
 
         <View style={styles.content}>
           <View style={styles.recordingArea}>
-            {/* Recording Visualizer */}
-            <View style={styles.visualizer}>
-              <Animated.View
-                style={[
-                  styles.recordingDot,
-                  {
-                    transform: [{ scale: pulseAnim }],
-                    backgroundColor: isRecording ? '#ef4444' : '#94a3b8'
-                  }
-                ]}
-              />
-            </View>
-
             {/* Duration Display */}
             <Text
               style={[styles.duration, isPlaying && styles.durationPlaying]}
             >
               {formatDuration(getCurrentDisplayTime())}
             </Text>
+
+            {/* Audio Bubble Image */}
+            <View style={styles.audioBubbleContainer}>
+              <AudioBubbleSvg width={50} height={50} />
+            </View>
 
             {/* Status Text */}
             <Text style={styles.statusText}>
@@ -550,37 +509,36 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(2, 6, 23, 0.05)'
   },
-  closeButton: {
-    padding: 4
+  headerContent: {
+    flex: 1
   },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center'
+  headerText: {
+    flexDirection: 'column'
   },
   headerTitle: {
-    ...TextStyles.h3,
+    fontFamily: 'Poppins',
+    fontSize: 24,
+    fontWeight: '500',
     color: Colors.foreground,
-    marginBottom: 8
+    textAlign: 'left',
+    marginBottom: 4
   },
-  connectionInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8
-  },
-  connectionName: {
+  username: {
     ...TextStyles.caption,
-    color: Colors.foreground,
-    fontSize: 14
+    color: Colors.placeholder,
+    fontSize: 12,
+    textAlign: 'left'
   },
-  placeholder: {
-    width: 32 // Same width as close button for centering
+  closeButton: {
+    padding: 8,
+    marginTop: -4
   },
   content: {
     flex: 1,
@@ -590,26 +548,18 @@ const styles = StyleSheet.create({
   },
   recordingArea: {
     alignItems: 'center',
-    marginBottom: 60
-  },
-  visualizer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(2, 6, 23, 0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24
-  },
-  recordingDot: {
-    width: 40,
-    height: 40,
-    borderRadius: 20
+    marginTop: 'auto'
   },
   duration: {
-    ...TextStyles.h2,
-    color: Colors.foreground,
-    marginBottom: 8
+    fontFamily: 'Poppins',
+    fontSize: 64,
+    fontWeight: '500',
+    color: Colors.foreground
+  },
+  audioBubbleContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24
   },
   statusText: {
     ...TextStyles.body,

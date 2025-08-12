@@ -28,7 +28,7 @@ const SettingsUsernameScreen = ({ navigation }) => {
     if (checkingAuth) return
 
     if (!isAuthenticated) {
-      navigation.navigate('Signin')
+      navigation.navigate('Auth', { mode: 'signin' })
     }
   }, [isAuthenticated, authToken, checkingAuth, navigation])
 

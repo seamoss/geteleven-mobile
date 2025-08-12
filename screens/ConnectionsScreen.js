@@ -239,18 +239,29 @@ export default function ConnectionsScreen ({ navigation, route }) {
     )
   }
 
+  // Check if there are any new messages across all connections
+  const hasNewMessages = connectionData.some(conn => conn.new_messages > 0)
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.connectionsWrap}>
         <View style={styles.header}>
-          <Text
-            style={{
-              ...styles.headerTitle,
-              fontSize: 20
-            }}
-          >
-            Connections ({connectionData.length.toLocaleString('en-US')})
-          </Text>
+          <View style={styles.headerContent}>
+            <Text
+              style={{
+                ...styles.headerTitle,
+                fontSize: 24
+              }}
+            >
+              Connections
+              {/* ({connectionData.length.toLocaleString('en-US')}) */}
+            </Text>
+            {hasNewMessages && (
+              <Text style={styles.headerSubtitle}>
+                Hey! It looks like there's new messages!
+              </Text>
+            )}
+          </View>
           <View style={styles.floatingIconTop}>
             <TouchableOpacity onPress={handleInvitePress}>
               <Plus size={24} color={Colors.foreground} strokeWidth={1.5} />
@@ -453,22 +464,29 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginTop: 10,
-    marginBottom: 0,
-    marginHorizontal: -15, // Extend border to screen edges
-    paddingHorizontal: 20, // Maintain content padding
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(2, 6, 23, 0.05)',
-    paddingVertical: 10
+    marginBottom: 10,
+    marginHorizontal: -15,
+    paddingHorizontal: 20
+  },
+  headerContent: {
+    flex: 1
   },
   headerTitle: {
     ...TextStyles.title, // Use responsive title style
     fontFamily: 'Poppins'
   },
+  headerSubtitle: {
+    ...TextStyles.body,
+    color: Colors.copy,
+    fontSize: 14,
+    marginTop: 0
+  },
   floatingIconTop: {
     borderRadius: 48,
-    padding: 10
+    padding: 10,
+    marginTop: -2
   },
   scrollContainer: {
     flex: 1

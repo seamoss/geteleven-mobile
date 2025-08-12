@@ -56,6 +56,11 @@ export const FontFamilies = {
         android: 'Poppins-Medium',
         default: 'Poppins_500Medium'
       }),
+  calloutMediumPoppins: Platform.select({
+    ios: 'Poppins-Medium',
+    android: 'Poppins-Medium',
+    default: 'Poppins_500Medium'
+  }),
   calloutSemiBold: NEXA_FONTS_AVAILABLE
     ? 'Nexa-Heavy' // Jump to Heavy for emphasis
     : Platform.select({

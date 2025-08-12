@@ -38,6 +38,10 @@ export default function SigninScreen ({ navigation, route }) {
   const [selectedCountry] = useState('US') // Defaulting to US only
   const [otp, setOtp] = useState('')
   const [step, setStep] = useState('send') // 'send' or 'verify'
+  
+  // Keyboard state
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
 
   useEffect(() => {
     if (checkingAuth) return
@@ -51,6 +55,24 @@ export default function SigninScreen ({ navigation, route }) {
       }
     }
   }, [isAuthenticated, checkingAuth, navigation, redirectTo, redirectParams])
+
+  // Keyboard event listeners
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardVisible(true)
+      setKeyboardHeight(e.endCoordinates.height)
+    })
+    
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false)
+      setKeyboardHeight(0)
+    })
+
+    return () => {
+      showSubscription?.remove()
+      hideSubscription?.remove()
+    }
+  }, [])
 
   const handleSendOTP = async () => {
     if (!phone.trim()) {
@@ -201,7 +223,27 @@ export default function SigninScreen ({ navigation, route }) {
     )
   }
 
-  const imageSize = getImageSize(300)
+  // Get the current responsive image size - smaller when keyboard is visible
+  const imageSize = getImageSize(keyboardVisible ? 200 : 300)
+  
+  // Dynamic styles based on keyboard state
+  const getContentAreaStyles = () => ({
+    ...styles.contentArea,
+    paddingBottom: keyboardVisible ? 10 : getResponsiveSpacing.elementSpacing
+  })
+  
+  const getImageContainerStyles = () => ({
+    ...styles.imageContainer,
+    marginVertical: keyboardVisible 
+      ? getResponsiveSpacing.imageMarginVertical * 0.5
+      : getResponsiveSpacing.imageMarginVertical
+  })
+  
+  const getButtonGroupStyles = () => ({
+    ...styles.buttonGroup,
+    marginTop: keyboardVisible ? 15 : 'auto',
+    marginBottom: keyboardVisible ? 10 : 0
+  })
 
   return (
     <SafeAreaView
@@ -217,8 +259,8 @@ export default function SigninScreen ({ navigation, route }) {
           {step === 'send' ? (
             <>
               {/* Content area */}
-              <View style={styles.contentArea}>
-                <View style={styles.imageContainer}>
+              <View style={getContentAreaStyles()}>
+                <View style={getImageContainerStyles()}>
                   <SigninSvg
                     width={imageSize}
                     height={imageSize}
@@ -251,7 +293,7 @@ export default function SigninScreen ({ navigation, route }) {
               </View>
 
               {/* Fixed buttons at bottom */}
-              <View style={styles.buttonGroup}>
+              <View style={getButtonGroupStyles()}>
                 <TouchableOpacity
                   style={[
                     styles.button,
@@ -283,8 +325,8 @@ export default function SigninScreen ({ navigation, route }) {
           ) : (
             <>
               {/* Content area */}
-              <View style={styles.contentArea}>
-                <View style={styles.imageContainer}>
+              <View style={getContentAreaStyles()}>
+                <View style={getImageContainerStyles()}>
                   <LockupSvg
                     width={imageSize}
                     height={imageSize}
@@ -306,7 +348,7 @@ export default function SigninScreen ({ navigation, route }) {
               </View>
 
               {/* Fixed buttons at bottom */}
-              <View style={styles.buttonGroup}>
+              <View style={getButtonGroupStyles()}>
                 <TouchableOpacity
                   style={[
                     styles.button,
