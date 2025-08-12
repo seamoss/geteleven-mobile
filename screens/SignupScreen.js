@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  ScrollView
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -20,13 +22,13 @@ import { TextStyles, ComponentStyles, Colors } from '../styles/fonts'
 import { getImageSize, getResponsiveSpacing } from '../utils/responsive'
 
 // Import the SVG images
-import CreateManagerSvg from '../assets/images/svg/create-manager.svg'
+import CreateManagerSvg from '../assets/images/svg/signup.svg'
 import LockupSvg from '../assets/images/svg/lockup.svg'
 
 export default function SignupScreen ({ navigation, route }) {
   const { countries, sendOTP, verifyOTP, checkUser } = useOTP()
   const { isAuthenticated, checkingAuth } = authCheck()
-  
+
   // Get redirect params from route (for deep linking)
   const { redirectTo, redirectParams } = route.params || {}
 
@@ -158,9 +160,9 @@ export default function SignupScreen ({ navigation, route }) {
         if (redirectTo && redirectParams) {
           // Store flag to indicate user needs onboarding after recording
           await AsyncStorage.setItem('needsOnboarding', 'true')
-          navigation.navigate(redirectTo, { 
-            ...redirectParams, 
-            isNewUser: true 
+          navigation.navigate(redirectTo, {
+            ...redirectParams,
+            isNewUser: true
           })
         } else {
           console.log('Navigating to onboarding...')
@@ -204,130 +206,152 @@ export default function SignupScreen ({ navigation, route }) {
   const imageSize = getImageSize(300)
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {step === 'send' ? (
-          <>
-            {/* Scrollable content area */}
-            <ScrollView
-              style={styles.scrollContent}
-              contentContainerStyle={styles.scrollContentContainer}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.imageContainer}>
-                <CreateManagerSvg
-                  width={imageSize}
-                  height={imageSize}
-                  color={Colors.copy}
-                />
+    <SafeAreaView
+      style={styles.container}
+      edges={['top', 'left', 'right', 'bottom']}
+    >
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        <View style={styles.content}>
+          {step === 'send' ? (
+            <>
+              {/* Scrollable content area */}
+              <ScrollView
+                style={styles.scrollContent}
+                contentContainerStyle={styles.scrollContentContainer}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps='handled'
+                keyboardDismissMode='on-drag'
+              >
+                <View style={styles.imageContainer}>
+                  <CreateManagerSvg
+                    width={imageSize}
+                    height={imageSize}
+                    color={Colors.copy}
+                  />
+                </View>
+
+                <Text style={styles.title}>We need your digits.</Text>
+                <Text style={styles.subtitle}>
+                  Not your fingers, your phone number. It's safer for you, and
+                  us. Plus, who forgets their phone number? You've had the same
+                  one since you were 13.
+                </Text>
+
+                <View style={styles.inputContainer}>
+                  <PhoneInput
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder='Enter your phone number'
+                    hasError={hasError}
+                    countryCode={selectedCountry}
+                    prefix='+1'
+                  />
+                </View>
+              </ScrollView>
+
+              {/* Fixed buttons at bottom */}
+              <View style={styles.buttonGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.button,
+                    styles.darkButton,
+                    (!phone || loading) && styles.disabledButton
+                  ]}
+                  onPress={handleSendOTP}
+                  disabled={!phone || loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color='#fff' />
+                  ) : (
+                    <Text style={styles.darkButtonText}>Send my code</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.button, styles.lightButton]}
+                  onPress={() =>
+                    navigation.navigate('Home', {
+                      animation: 'slide_from_left'
+                    })
+                  }
+                >
+                  <Text style={styles.lightButtonText}>Go back</Text>
+                </TouchableOpacity>
               </View>
+            </>
+          ) : (
+            <>
+              {/* Scrollable content area */}
+              <ScrollView
+                style={styles.scrollContent}
+                contentContainerStyle={styles.scrollContentContainer}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps='handled'
+                keyboardDismissMode='on-drag'
+              >
+                <View style={styles.imageContainer}>
+                  <LockupSvg
+                    width={imageSize}
+                    height={imageSize}
+                    color={Colors.copy}
+                  />
+                </View>
 
-              <Text style={styles.title}>
-                Awesome! Let's get you signed up.
-              </Text>
-              <Text style={styles.subtitle}>
-                Enter your phone number below. We'll send you a text message
-                with a code to verify it's you.
-              </Text>
+                <Text style={styles.title}>
+                  Check your phone! We just sent you a code to verify your phone
+                  number.
+                </Text>
 
-              <View style={styles.inputContainer}>
-                <PhoneInput
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder='Enter your phone number'
+                <OTPInput
+                  value={otp}
+                  onChangeText={setOtp}
                   hasError={hasError}
-                  countryCode={selectedCountry}
-                  prefix='+1'
                 />
+              </ScrollView>
+
+              {/* Fixed buttons at bottom */}
+              <View style={styles.buttonGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.button,
+                    styles.darkButton,
+                    (otp.length !== 4 || loading) && styles.disabledButton
+                  ]}
+                  onPress={handleVerifyOTP}
+                  disabled={otp.length !== 4 || loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color='#fff' />
+                  ) : (
+                    <Text style={styles.darkButtonText}>Verify code</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.button, styles.lightButton]}
+                  onPress={handleBack}
+                >
+                  <Text style={styles.lightButtonText}>Go back</Text>
+                </TouchableOpacity>
               </View>
-            </ScrollView>
-
-            {/* Fixed buttons at bottom */}
-            <View style={styles.buttonGroup}>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.darkButton,
-                  (!phone || loading) && styles.disabledButton
-                ]}
-                onPress={handleSendOTP}
-                disabled={!phone || loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color='#fff' />
-                ) : (
-                  <Text style={styles.darkButtonText}>Send my code</Text>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.button, styles.lightButton]}
-                onPress={() =>
-                  navigation.navigate('Home', { animation: 'slide_from_left' })
-                }
-              >
-                <Text style={styles.lightButtonText}>Go back</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <>
-            {/* Scrollable content area */}
-            <ScrollView
-              style={styles.scrollContent}
-              contentContainerStyle={styles.scrollContentContainer}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.imageContainer}>
-                <LockupSvg
-                  width={imageSize}
-                  height={imageSize}
-                  color={Colors.copy}
-                />
-              </View>
-
-              <Text style={styles.title}>
-                Check your phone! We just sent you a code to verify your phone
-                number.
-              </Text>
-
-              <OTPInput value={otp} onChangeText={setOtp} hasError={hasError} />
-            </ScrollView>
-
-            {/* Fixed buttons at bottom */}
-            <View style={styles.buttonGroup}>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.darkButton,
-                  (otp.length !== 4 || loading) && styles.disabledButton
-                ]}
-                onPress={handleVerifyOTP}
-                disabled={otp.length !== 4 || loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color='#fff' />
-                ) : (
-                  <Text style={styles.darkButtonText}>Verify code</Text>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.button, styles.lightButton]}
-                onPress={handleBack}
-              >
-                <Text style={styles.lightButtonText}>Go back</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-      </View>
+            </>
+          )}
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: ComponentStyles.container,
+
+  keyboardAvoidingView: {
+    flex: 1
+  },
 
   content: {
     ...ComponentStyles.content,
