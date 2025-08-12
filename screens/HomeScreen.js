@@ -6,17 +6,20 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView
+  ScrollView,
+  Image,
+  Dimensions
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import useTransition from '../hooks/transition'
 import { authCheck } from '../lib/auth'
 import User from '../hooks/user'
-import Nav from '../components/Nav'
-import HomeSvg from '../assets/images/svg/home.svg'
 import { TextStyles, ComponentStyles, Colors } from '../styles/fonts'
-import { getImageSize, getResponsiveSpacing } from '../utils/responsive'
+import { getResponsiveSpacing } from '../utils/responsive'
+import LogoSvg from '../assets/images/svg/logo.svg'
+
+const { width: screenWidth } = Dimensions.get('window')
 
 export default function HomeScreen () {
   const { navigate } = useTransition()
@@ -46,43 +49,77 @@ export default function HomeScreen () {
     getMe()
   }, [authToken, isAuthenticated])
 
-  const imageSize = getImageSize(300)
+  const images = [
+    require('../assets/images/png/home-1.png'),
+    require('../assets/images/png/home-2.png'),
+    require('../assets/images/png/home-3.png'),
+    require('../assets/images/png/home-4.png')
+  ]
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Scrollable content area */}
-        <ScrollView
-          style={styles.scrollContent}
-          contentContainerStyle={styles.scrollContentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <Nav />
-          <View style={styles.imageContainer}>
-            <HomeSvg width={imageSize} height={imageSize} color={Colors.copy} />
-          </View>
-          <Text style={styles.title}>
-            Are you ready to crank your 1:1s to eleven?
-          </Text>
-        </ScrollView>
+        <View style={styles.logoContainer}>
+          <LogoSvg width={100} height={40} />
+        </View>
 
-        {/* Fixed buttons at bottom */}
-        <View style={styles.buttonGroup}>
+        {/* Image Row */}
+        <View style={styles.imageRow}>
+          {images.map((image, index) => (
+            <View
+              key={index}
+              style={[
+                styles.imageWrapper,
+                index === 0 && styles.firstImage,
+                index === 3 && styles.lastImage,
+                (index === 0 || index === 2) && { marginTop: 15 },
+                index !== 3 && { marginRight: 10 } // Add 10px spacing between images
+              ]}
+            >
+              <Image
+                source={image}
+                style={[
+                  styles.image,
+                  index === 0 && {
+                    borderTopLeftRadius: 0,
+                    borderBottomLeftRadius: 0
+                  },
+                  index === 3 && {
+                    borderTopRightRadius: 0,
+                    borderBottomRightRadius: 0
+                  }
+                ]}
+                resizeMode='cover'
+              />
+            </View>
+          ))}
+        </View>
+
+        {/* Main Content */}
+        <View style={styles.mainContent}>
+          <Text style={styles.headline}>
+            an anti-distraction platform for better conversations, later.
+          </Text>
+          <Text style={styles.subtext}>
+            Collect important thoughts and questions in between one-on-one
+            conversations.
+          </Text>
+        </View>
+
+        {/* Bottom Actions */}
+        <View style={styles.bottomActions}>
           <TouchableOpacity
-            style={[styles.button, styles.darkButton]}
-            onPress={() => {
-              navigate('/signup')
-            }}
+            style={styles.getStartedButton}
+            onPress={() => navigate('/signup')}
           >
-            <Text style={styles.darkButtonText}>Create account</Text>
+            <Text style={styles.getStartedText}>Get started</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
-            style={[styles.button, styles.lightButton]}
-            onPress={() => {
-              navigate('/signin')
-            }}
+            style={styles.signInButton}
+            onPress={() => navigate('/signin')}
           >
-            <Text style={styles.lightButtonText}>Sign in</Text>
+            <Text style={styles.signInText}>Sign in</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -91,48 +128,110 @@ export default function HomeScreen () {
 }
 
 const styles = StyleSheet.create({
-  container: ComponentStyles.container,
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff'
+  },
 
   content: {
-    ...ComponentStyles.content,
-    paddingHorizontal: getResponsiveSpacing.horizontalPadding
+    flex: 1,
+    paddingTop: 20
   },
 
-  scrollContent: {
-    flex: 1
+  logoContainer: {
+    paddingHorizontal: getResponsiveSpacing.horizontalPadding,
+    marginBottom: 75
   },
 
-  scrollContentContainer: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingBottom: getResponsiveSpacing.elementSpacing // Add some padding at bottom for scroll
+  imageRow: {
+    flexDirection: 'row',
+    marginBottom: 75,
+    paddingHorizontal: 0,
+    overflow: 'hidden'
   },
 
-  imageContainer: {
+  imageWrapper: {
+    // Fixed height of 200px, width calculated to fit screen with 10px gaps
+    width: (screenWidth - 10 * 3) / 4,
+    height: 200, // Fixed 200px height
+    borderRadius: 8,
+    overflow: 'hidden'
+  },
+
+  firstImage: {
+    marginLeft: 0, // Start from edge
+    width: (screenWidth - 10 * 3) / 4,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0
+  },
+
+  lastImage: {
+    marginRight: 0, // End at edge
+    width: (screenWidth - 10 * 3) / 4,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0
+  },
+
+  image: {
     width: '100%',
+    height: '100%'
+  },
+
+  mainContent: {
+    flex: 1,
+    paddingHorizontal: getResponsiveSpacing.horizontalPadding,
+    marginBottom: 30
+  },
+
+  headline: {
+    fontFamily: 'Poppins',
+    fontSize: 23,
+    fontWeight: '600',
+    color: Colors.foreground,
+    lineHeight: 36,
+    marginBottom: 16
+  },
+
+  subtext: {
+    ...TextStyles.body,
+    fontSize: 16,
+    color: Colors.copy,
+    lineHeight: 24
+  },
+
+  bottomActions: {
+    paddingHorizontal: getResponsiveSpacing.horizontalPadding,
+    paddingBottom: 0
+  },
+
+  getStartedButton: {
+    backgroundColor: Colors.foreground,
+    borderRadius: 8,
+    paddingVertical: 16,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: getResponsiveSpacing.imageMarginVertical
+    marginBottom: 20
   },
 
-  title: {
-    ...TextStyles.title,
-    textAlign: 'center',
-    marginBottom: getResponsiveSpacing.titleMarginBottom,
-    paddingHorizontal: getResponsiveSpacing.horizontalPadding
+  getStartedText: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#ffffff'
   },
 
-  buttonGroup: {
-    ...ComponentStyles.buttonGroup
+  signInButton: {
+    alignItems: 'center',
+    paddingVertical: 10
   },
 
-  button: ComponentStyles.button,
-
-  darkButton: ComponentStyles.buttonDark,
-
-  lightButton: ComponentStyles.buttonLight,
-
-  darkButtonText: TextStyles.buttonDark,
-
-  lightButtonText: TextStyles.buttonLight
+  signInText: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: '400',
+    color: Colors.foreground
+  }
 })
