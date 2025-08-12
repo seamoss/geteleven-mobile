@@ -5,7 +5,8 @@ import {
   StyleSheet,
   Modal,
   TouchableOpacity,
-  Alert
+  Alert,
+  Animated
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Audio } from 'expo-av'
@@ -37,10 +38,16 @@ export default function VoiceRecordingModal ({
   const [isPlaying, setIsPlaying] = useState(false)
   const [playbackSound, setPlaybackSound] = useState(null)
   const [playbackPosition, setPlaybackPosition] = useState(0)
+  const [modalReady, setModalReady] = useState(false)
 
   // Timer ref for recording duration
   const timerRef = useRef(null)
   const playbackRef = useRef(false) // Prevent race conditions
+
+  // Fade animation for overlay
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  // Slide animation for modal content
+  const slideAnim = useRef(new Animated.Value(300)).current // Start off-screen
 
   // Timer for recording duration
   useEffect(() => {
@@ -62,24 +69,62 @@ export default function VoiceRecordingModal ({
     }
   }, [isRecording])
 
-  // Start recording when modal opens
+  // Start recording when modal opens with sequenced animations
   useEffect(() => {
-    if (visible && !isRecording && !hasRecording) {
-      startRecording()
-    }
-  }, [visible])
+    if (visible) {
+      // Show the modal and start animations
+      setModalReady(true)
 
-  // Clean up when modal closes
-  useEffect(() => {
-    if (!visible) {
+      // Small delay to ensure modal is mounted before animating
+      setTimeout(() => {
+        // First fade in the overlay, then slide up the modal
+        Animated.sequence([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 100,
+            useNativeDriver: true
+          }),
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true
+          })
+        ]).start(() => {
+          // Start recording after animation completes
+          if (!isRecording && !hasRecording) {
+            startRecording()
+          }
+        })
+      }, 50)
+    } else if (modalReady) {
+      // Sequence the closing animations: first slide down, then fade out
+      Animated.sequence([
+        Animated.timing(slideAnim, {
+          toValue: 300,
+          duration: 200,
+          useNativeDriver: true
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true
+        })
+      ]).start(() => {
+        // Hide modal and reset values after closing
+        setModalReady(false)
+        slideAnim.setValue(300)
+        fadeAnim.setValue(0)
+      })
       resetRecording()
     }
   }, [visible])
 
   const startRecording = async () => {
+    console.log('Starting recording...')
     try {
       // Request permissions
       const permissionResponse = await Audio.requestPermissionsAsync()
+      console.log('Permission status:', permissionResponse.status)
       if (permissionResponse.status !== 'granted') {
         Alert.alert(
           'Permission required',
@@ -93,6 +138,7 @@ export default function VoiceRecordingModal ({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true
       })
+      console.log('Audio mode set')
 
       const { recording } = await Audio.Recording.createAsync({
         isMeteringEnabled: true,
@@ -125,7 +171,9 @@ export default function VoiceRecordingModal ({
       setIsRecording(true)
       setRecordingDuration(0)
       setIsRecordingUnloaded(false)
+      console.log('Recording started successfully')
     } catch (err) {
+      console.error('Failed to start recording:', err)
       Alert.alert('Error', 'Failed to start recording. Please try again.')
     }
   }
@@ -361,200 +409,211 @@ export default function VoiceRecordingModal ({
 
   return (
     <Modal
-      visible={visible}
-      animationType='slide'
-      presentationStyle='pageSheet'
+      visible={modalReady}
+      animationType='none'
+      transparent={true}
       onRequestClose={handleClose}
     >
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.headerText}>
-              <Text style={styles.headerTitle}>
-                {connection
-                  ? formatConnectionName(connection)
-                  : 'Record message'}
-              </Text>
-              {connection?.username && (
-                <Text style={styles.username}>@{connection.username}</Text>
-              )}
-            </View>
-          </View>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleClose}
-            disabled={isSending}
-          >
-            <X size={24} color={Colors.foreground} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.content}>
-          <View style={styles.recordingArea}>
-            {/* Duration Display */}
-            <Text
-              style={[styles.duration, isPlaying && styles.durationPlaying]}
-            >
-              {formatDuration(getCurrentDisplayTime())}
-            </Text>
-
-            {/* Audio Bubble Image */}
-            <View style={styles.audioBubbleContainer}>
-              <AudioBubbleSvg width={50} height={50} />
-            </View>
-
-            {/* Status Text */}
-            <Text style={styles.statusText}>
-              {isRecording
-                ? 'Recording...'
-                : hasRecording
-                ? ''
-                : 'Ready to record'}
-            </Text>
-          </View>
-
-          {/* Controls */}
-          <View style={styles.controls}>
-            {!hasRecording ? (
-              // Recording controls
-              <TouchableOpacity
-                style={[styles.iconButton, styles.stopButton]}
-                onPress={stopRecording}
-                disabled={!isRecording}
-              >
-                <Square size={28} color='#fff' fill='#fff' />
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        </View>
-
-        {/* Bottom Action Toolbar - Only show when recording is complete */}
-        {hasRecording && !isSending && (
-          <View style={styles.actionsContainer}>
+      <Animated.View
+        style={[
+          styles.modalOverlay,
+          {
+            opacity: fadeAnim
+          }
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.dismissArea}
+          activeOpacity={1}
+          onPress={handleClose}
+        />
+        <Animated.View
+          style={[
+            styles.modalContent,
+            {
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
+        >
+          <SafeAreaView style={styles.container}>
+            {/* Close button positioned at top right */}
             <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => {
-                resetRecording()
-                setTimeout(startRecording, 100) // Restart recording after reset
-              }}
+              style={styles.closeButton}
+              onPress={handleClose}
               disabled={isSending}
             >
-              <RotateCcw
-                size={20}
-                color={Colors.foreground}
-                strokeWidth={1.5}
-              />
+              <X size={24} color={Colors.foreground} />
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handlePlayback}
-              disabled={isSending}
-            >
-              {isPlaying ? (
-                <Pause size={20} color='#22c55e' strokeWidth={1.5} />
-              ) : (
-                <Play size={20} color={Colors.foreground} strokeWidth={1.5} />
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleSend}
-              disabled={isSending}
-            >
-              <Send size={20} color={Colors.foreground} strokeWidth={1.5} />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Upload Progress Overlay */}
-        {isSending && (
-          <View style={styles.uploadOverlay}>
-            <View style={styles.uploadModal}>
-              <View style={styles.uploadContent}>
-                <Text style={styles.uploadTitle}>Sending message...</Text>
-                <Text style={styles.uploadSubtitle}>
-                  to{' '}
-                  {connection ? formatConnectionName(connection) : 'connection'}
+            <View style={styles.content}>
+              <View style={styles.recordingArea}>
+                {/* Duration Display */}
+                <Text
+                  style={[styles.duration, isPlaying && styles.durationPlaying]}
+                >
+                  {formatDuration(getCurrentDisplayTime())}
                 </Text>
 
-                {/* Progress Bar Container */}
-                <View style={styles.progressContainer}>
-                  <View style={styles.progressTrack}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        { width: `${uploadProgress}%` }
-                      ]}
-                    />
-                  </View>
-                  <Text style={styles.progressText}>
-                    {Math.round(uploadProgress)}%
-                  </Text>
+                <View style={styles.audioBubbleContainer}>
+                  <AudioBubbleSvg width={50} height={50} />
                 </View>
               </View>
             </View>
-          </View>
-        )}
-      </SafeAreaView>
+
+            {/* Bottom Controls - Always visible to prevent bouncing */}
+            <View style={styles.actionsContainer}>
+              {!hasRecording ? (
+                // Recording control - centered
+                <View style={styles.recordingControlWrapper}>
+                  <TouchableOpacity
+                    style={[styles.iconButton, styles.stopButton]}
+                    onPress={stopRecording}
+                    disabled={!isRecording}
+                  >
+                    <Square size={28} color='#fff' fill='#fff' />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                // Playback controls
+                <>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => {
+                      resetRecording()
+                      setTimeout(startRecording, 100) // Restart recording after reset
+                    }}
+                    disabled={isSending}
+                  >
+                    <RotateCcw
+                      size={20}
+                      color={Colors.foreground}
+                      strokeWidth={1.5}
+                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={handlePlayback}
+                    disabled={isSending}
+                  >
+                    {isPlaying ? (
+                      <Pause size={20} color='#22c55e' strokeWidth={1.5} />
+                    ) : (
+                      <Play
+                        size={20}
+                        color={Colors.foreground}
+                        strokeWidth={1.5}
+                      />
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={handleSend}
+                    disabled={isSending}
+                  >
+                    <Send
+                      size={20}
+                      color={Colors.foreground}
+                      strokeWidth={1.5}
+                    />
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+
+            {/* Upload Progress Overlay */}
+            {isSending && (
+              <View style={styles.uploadOverlay}>
+                <View style={styles.uploadModal}>
+                  <View style={styles.uploadContent}>
+                    <Text style={styles.uploadTitle}>Sending message...</Text>
+                    <Text style={styles.uploadSubtitle}>
+                      to{' '}
+                      {connection
+                        ? formatConnectionName(connection)
+                        : 'connection'}
+                    </Text>
+
+                    {/* Progress Bar Container */}
+                    <View style={styles.progressContainer}>
+                      <View style={styles.progressTrack}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            { width: `${uploadProgress}%` }
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.progressText}>
+                        {Math.round(uploadProgress)}%
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
+          </SafeAreaView>
+        </Animated.View>
+      </Animated.View>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)', // Semi-transparent background
+    justifyContent: 'flex-end'
+  },
+  dismissArea: {
+    flex: 1 // Tappable area to dismiss modal
+  },
+  modalContent: {
+    height: '40%', // Half the screen height
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    overflow: 'hidden',
+    // Add shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    // Add elevation for Android
+    elevation: 10
+  },
   container: {
     flex: 1,
-    backgroundColor: '#ffffff'
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(2, 6, 23, 0.05)'
-  },
-  headerContent: {
-    flex: 1
-  },
-  headerText: {
-    flexDirection: 'column'
-  },
-  headerTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 24,
-    fontWeight: '500',
-    color: Colors.foreground,
-    textAlign: 'left',
-    marginBottom: 4
-  },
-  username: {
-    ...TextStyles.caption,
-    color: Colors.placeholder,
-    fontSize: 12,
-    textAlign: 'left'
+    backgroundColor: 'transparent'
   },
   closeButton: {
-    padding: 8,
-    marginTop: -4
+    position: 'absolute',
+    top: 16,
+    right: 20,
+    zIndex: 10,
+    padding: 8
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40
+    paddingHorizontal: 50
   },
   recordingArea: {
     alignItems: 'center',
-    marginTop: 'auto'
+    flex: 1,
+    justifyContent: 'center'
   },
   duration: {
     fontFamily: 'Poppins',
     fontSize: 64,
     fontWeight: '500',
-    color: Colors.foreground
+    color: Colors.foreground,
+    marginTop: 20
   },
   audioBubbleContainer: {
     alignItems: 'center',
@@ -565,8 +624,10 @@ const styles = StyleSheet.create({
     ...TextStyles.body,
     color: Colors.foreground
   },
-  controls: {
-    width: '100%',
+  recordingControlWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center'
   },
   iconButton: {
@@ -589,7 +650,7 @@ const styles = StyleSheet.create({
   },
   postRecordingControls: {
     flexDirection: 'row',
-    gap: 20
+    gap: 22
   },
   resetButton: {
     backgroundColor: 'rgba(2, 6, 23, 0.05)'
@@ -669,7 +730,8 @@ const styles = StyleSheet.create({
   actionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 10
+    paddingVertical: 10,
+    marginBottom: 15
   },
   actionButton: {
     alignItems: 'center',
