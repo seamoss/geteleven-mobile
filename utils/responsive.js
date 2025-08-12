@@ -130,10 +130,8 @@ export const getButtonGroupStyles = () => ({
   marginTop: 'auto', // Push to bottom
   paddingBottom:
     Platform.OS === 'ios'
-      ? isShortScreen
-        ? 10
-        : 20 // Account for home indicator
-      : getResponsiveSpacing.buttonGroupPadding,
+      ? 0 // SafeAreaView handles the bottom safe area
+      : 10, // Small padding for Android
   paddingTop: getResponsiveSpacing.buttonGroupPadding
 })
 
