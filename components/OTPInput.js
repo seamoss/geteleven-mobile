@@ -134,20 +134,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 75
+    gap: 10,
+    marginBottom: 50
   },
   input: {
-    width: 65,
-    height: 80,
-    fontSize: 55,
+    width: 55,
+    height: 55,
+    fontSize: 20,
     fontWeight: '600',
     fontFamily: TextStyles.buttonDark.fontFamily,
-    borderBottomWidth: 1,
+    borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 8,
-    borderBottomRightRadius: 0,
-    borderBottomLeftRadius: 0,
     backgroundColor: Colors.white,
     textAlign: 'center',
     color: Colors.foreground

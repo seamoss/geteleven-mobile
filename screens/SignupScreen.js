@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  ScrollView,
   KeyboardAvoidingView,
   Platform
 } from 'react-native'
@@ -218,14 +217,8 @@ export default function SignupScreen ({ navigation, route }) {
         <View style={styles.content}>
           {step === 'send' ? (
             <>
-              {/* Scrollable content area */}
-              <ScrollView
-                style={styles.scrollContent}
-                contentContainerStyle={styles.scrollContentContainer}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps='handled'
-                keyboardDismissMode='on-drag'
-              >
+              {/* Content area */}
+              <View style={styles.contentArea}>
                 <View style={styles.imageContainer}>
                   <CreateManagerSvg
                     width={imageSize}
@@ -251,7 +244,7 @@ export default function SignupScreen ({ navigation, route }) {
                     prefix='+1'
                   />
                 </View>
-              </ScrollView>
+              </View>
 
               {/* Fixed buttons at bottom */}
               <View style={styles.buttonGroup}>
@@ -285,14 +278,8 @@ export default function SignupScreen ({ navigation, route }) {
             </>
           ) : (
             <>
-              {/* Scrollable content area */}
-              <ScrollView
-                style={styles.scrollContent}
-                contentContainerStyle={styles.scrollContentContainer}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps='handled'
-                keyboardDismissMode='on-drag'
-              >
+              {/* Content area */}
+              <View style={styles.contentArea}>
                 <View style={styles.imageContainer}>
                   <LockupSvg
                     width={imageSize}
@@ -301,9 +288,17 @@ export default function SignupScreen ({ navigation, route }) {
                   />
                 </View>
 
-                <Text style={styles.title}>
-                  Check your phone! We just sent you a code to verify your phone
-                  number.
+                <Text
+                  style={{
+                    ...styles.title,
+                    marginBottom: 5
+                  }}
+                >
+                  Here comes the SMS
+                </Text>
+
+                <Text style={styles.subtitle}>
+                  Enter the code we just sent below.
                 </Text>
 
                 <OTPInput
@@ -311,7 +306,7 @@ export default function SignupScreen ({ navigation, route }) {
                   onChangeText={setOtp}
                   hasError={hasError}
                 />
-              </ScrollView>
+              </View>
 
               {/* Fixed buttons at bottom */}
               <View style={styles.buttonGroup}>
@@ -358,14 +353,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveSpacing.horizontalPadding
   },
 
-  scrollContent: {
-    flex: 1
-  },
-
-  scrollContentContainer: {
-    flexGrow: 1,
+  contentArea: {
+    flex: 1,
     alignItems: 'center',
-    paddingBottom: getResponsiveSpacing.elementSpacing
+    justifyContent: 'center',
+    paddingBottom: getResponsiveSpacing.elementSpacing,
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center'
   },
 
   loadingContainer: {
@@ -385,18 +380,26 @@ const styles = StyleSheet.create({
   title: {
     ...TextStyles.title,
     textAlign: 'center',
-    marginBottom: getResponsiveSpacing.titleMarginBottom * 0.47 // Slightly less than home screen
+    marginBottom: getResponsiveSpacing.titleMarginBottom * 0.47, // Slightly less than home screen
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center'
   },
 
   subtitle: {
     ...TextStyles.body,
     textAlign: 'center',
-    marginBottom: getResponsiveSpacing.elementSpacing * 1.5
+    marginBottom: getResponsiveSpacing.elementSpacing * 1.5,
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center'
   },
 
   inputContainer: {
     marginBottom: getResponsiveSpacing.titleMarginBottom,
-    width: '100%'
+    width: '100%',
+    maxWidth: 400, // Match the scroll container max width
+    alignSelf: 'center'
   },
 
   buttonGroup: ComponentStyles.buttonGroup,

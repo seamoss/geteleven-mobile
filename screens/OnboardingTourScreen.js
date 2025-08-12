@@ -14,6 +14,7 @@ import { getImageSize, getResponsiveSpacing } from '../utils/responsive'
 import Tour1Svg from '../assets/images/svg/share.svg'
 import Tour2Svg from '../assets/images/svg/share.svg'
 import Tour3Svg from '../assets/images/svg/grow.svg'
+import LogoSvg from '../assets/images/svg/logo.svg'
 
 const tourSteps = [
   {
@@ -46,7 +47,7 @@ export default function OnboardingTourScreen ({ navigation }) {
     if (currentStep < tourSteps.length - 1) {
       setCurrentStep(currentStep + 1)
     } else {
-      navigation.navigate('OnboardingProfile')
+      navigation.navigate('Connections', { autoOpenModal: true })
     }
   }
 
@@ -64,6 +65,11 @@ export default function OnboardingTourScreen ({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Logo Header */}
+      <View style={styles.logoContainer}>
+        <LogoSvg width={80} height={40} />
+      </View>
+
       <View style={styles.content}>
         {/* Scrollable content area */}
         <ScrollView
@@ -90,7 +96,7 @@ export default function OnboardingTourScreen ({ navigation }) {
             onPress={handleNext}
           >
             <Text style={styles.darkButtonText}>
-              {currentStep < tourSteps.length - 1 ? 'Next' : 'Set up profile'}
+              {currentStep < tourSteps.length - 1 ? 'Next' : 'Start connecting!'}
             </Text>
           </TouchableOpacity>
 
@@ -110,6 +116,12 @@ export default function OnboardingTourScreen ({ navigation }) {
 
 const styles = StyleSheet.create({
   container: ComponentStyles.container,
+
+  logoContainer: {
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 40
+  },
 
   content: {
     ...ComponentStyles.content,

@@ -16,7 +16,8 @@ import {
   Mic,
   RotateCcw,
   Settings,
-  Smartphone
+  Smartphone,
+  PlayCircle
 } from 'lucide-react-native'
 import { Colors } from '../styles/fonts'
 import useTransition from '../hooks/transition'
@@ -193,6 +194,20 @@ export default function DebugSettingsScreen () {
     )
   }
 
+  const testTourModal = () => {
+    Alert.alert(
+      'Test Tour Modal',
+      'This will take you to the Connections page and show the tour modal.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Show Tour',
+          onPress: () => navigate('Connections', { showTour: true })
+        }
+      ]
+    )
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -246,6 +261,13 @@ export default function DebugSettingsScreen () {
             label='Test Onboarding Permissions'
             tip='Navigate to the onboarding permissions screen.'
             onPress={testOnboardingFlow}
+          />
+
+          <DebugRow
+            Icon={PlayCircle}
+            label='Test Tour Modal'
+            tip='Show the tour modal on the Connections page.'
+            onPress={testTourModal}
           />
 
           <DebugRow

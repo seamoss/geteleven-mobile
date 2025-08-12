@@ -65,8 +65,8 @@ export default function OnboardingPreviewScreen ({ navigation, route }) {
       // Add any final onboarding completion logic here
       console.log('Onboarding completed for user:', meData)
 
-      // Navigate to connections screen with auto-open modal flag
-      navigation.navigate('Connections', { autoOpenModal: true })
+      // Navigate to connections screen with tour modal
+      navigation.navigate('Connections', { showTour: true })
     } catch (error) {
       console.error('Error completing onboarding:', error)
     } finally {

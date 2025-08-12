@@ -10,8 +10,9 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { TextStyles, ComponentStyles, Colors } from '../styles/fonts'
 import { getImageSize, getResponsiveSpacing } from '../utils/responsive'
 
-// Import the SVG image
+// Import the SVG images
 import OnboardingStartSvg from '../assets/images/svg/onboarding-start.svg'
+import LogoSvg from '../assets/images/svg/logo.svg'
 
 export default function OnboardingWelcomeScreen ({ navigation }) {
   const handleContinue = () => {
@@ -22,6 +23,11 @@ export default function OnboardingWelcomeScreen ({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Logo Header */}
+      <View style={styles.logoContainer}>
+        <LogoSvg width={80} height={40} />
+      </View>
+
       <View style={styles.content}>
         {/* Scrollable content area */}
         <ScrollView
@@ -37,10 +43,15 @@ export default function OnboardingWelcomeScreen ({ navigation }) {
             />
           </View>
 
-          <Text style={styles.title}>Welcome to Eleven!</Text>
-          <Text style={styles.subtitle}>
-            You're all set! Let's take a quick tour to help you get the most out
-            of your new account and connect with your network.
+          <Text style={styles.title}>You made it!</Text>
+          <Text
+            style={{
+              ...styles.subtitle,
+              paddingHorizontal: getResponsiveSpacing.horizontalPadding + 12
+            }}
+          >
+            Eleven is about strengthening connections, we can’t do that without
+            knowing a few things about you first, can we?
           </Text>
         </ScrollView>
 
@@ -50,7 +61,7 @@ export default function OnboardingWelcomeScreen ({ navigation }) {
             style={[styles.button, styles.darkButton]}
             onPress={handleContinue}
           >
-            <Text style={styles.darkButtonText}>Let's get started</Text>
+            <Text style={styles.darkButtonText}>Let's go</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -60,6 +71,12 @@ export default function OnboardingWelcomeScreen ({ navigation }) {
 
 const styles = StyleSheet.create({
   container: ComponentStyles.container,
+
+  logoContainer: {
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 40
+  },
 
   content: {
     ...ComponentStyles.content,

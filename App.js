@@ -71,7 +71,8 @@ export default function App () {
   const [isReady, setIsReady] = useState(false)
   const [initialUrl, setInitialUrl] = useState(null)
   
-  const [fontsLoaded] = useFonts({
+  // Try to load Nexa fonts if they exist
+  let customFonts = {
     Inter_300Light,
     Inter_400Regular,
     Inter_500Medium,
@@ -81,7 +82,23 @@ export default function App () {
     Poppins_500Medium,
     Poppins_600SemiBold,
     Poppins_700Bold
-  })
+  }
+  
+  // Load Nexa fonts
+  customFonts['Nexa-ExtraLight'] = require('./assets/fonts/Nexa-ExtraLight.ttf')
+  customFonts['Nexa-Regular'] = require('./assets/fonts/Nexa-Regular.ttf')
+  customFonts['Nexa-Heavy'] = require('./assets/fonts/Nexa-Heavy.ttf')
+  
+  const [fontsLoaded] = useFonts(customFonts)
+
+  // Debug font loading
+  useEffect(() => {
+    if (fontsLoaded) {
+      console.log('✅ Fonts loaded successfully:', Object.keys(customFonts))
+    } else {
+      console.log('⏳ Loading fonts...', Object.keys(customFonts))
+    }
+  }, [fontsLoaded])
 
   // Initialize audio mode and auto-updates for production builds
   useEffect(() => {

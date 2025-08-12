@@ -20,6 +20,7 @@ import navTransition from '../hooks/transition'
 import ElevenAvatar from '../components/ElevenAvatar'
 import AddConnectionModal from '../components/AddConnectionModal'
 import UpgradeModal from '../components/UpgradeModal'
+import TourModal from '../components/TourModal'
 import { replaceDomain } from '../lib/util'
 import { getResponsiveSpacing, scale, isSmallDevice } from '../utils/responsive'
 
@@ -33,9 +34,10 @@ export default function ConnectionsScreen ({ navigation, route }) {
   const [inviteVisible, setInviteVisible] = useState(false)
   const [upgradeVisible, setUpgradeVisible] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [tourVisible, setTourVisible] = useState(false)
 
-  // Get route params to check if we should auto-open the modal
-  const { autoOpenModal } = route?.params || {}
+  // Get route params to check if we should auto-open modals
+  const { autoOpenModal, showTour } = route?.params || {}
 
   // Helper function to format names like the web version
   const formatConnectionName = connection => {
@@ -165,13 +167,22 @@ export default function ConnectionsScreen ({ navigation, route }) {
     }, [isAuthenticated, meData, checkingAuth, authToken])
   )
 
-  // Auto-open modal when coming from onboarding
+  // Auto-open tour modal when coming from onboarding
+  useEffect(() => {
+    if (showTour && meData && !loading) {
+      setTourVisible(true)
+
+      // Clear the route param to prevent re-opening on future navigations
+      navigation.setParams({ showTour: undefined })
+    }
+  }, [showTour, meData, loading])
+
+  // Auto-open connection modal when specified
   useEffect(() => {
     if (autoOpenModal && meData && !loading) {
       setInviteVisible(true)
 
       // Clear the route param to prevent re-opening on future navigations
-      // This ensures the modal only auto-opens once
       navigation.setParams({ autoOpenModal: undefined })
     }
   }, [autoOpenModal, meData, loading])
@@ -210,6 +221,14 @@ export default function ConnectionsScreen ({ navigation, route }) {
     )
   }
 
+  const handleTourComplete = () => {
+    setTourVisible(false)
+    // After tour completion, show the add connections modal
+    setTimeout(() => {
+      setInviteVisible(true)
+    }, 300) // Small delay for better UX
+  }
+
   if (checkingAuth || loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -224,7 +243,12 @@ export default function ConnectionsScreen ({ navigation, route }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.connectionsWrap}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>
+          <Text
+            style={{
+              ...styles.headerTitle,
+              fontSize: 20
+            }}
+          >
             Connections ({connectionData.length.toLocaleString('en-US')})
           </Text>
           <View style={styles.floatingIconTop}>
@@ -401,6 +425,9 @@ export default function ConnectionsScreen ({ navigation, route }) {
           fetchData(false)
         }}
       />
+
+      {/* Tour Modal */}
+      <TourModal visible={tourVisible} onComplete={handleTourComplete} />
     </SafeAreaView>
   )
 }

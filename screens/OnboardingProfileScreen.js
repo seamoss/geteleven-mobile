@@ -7,7 +7,9 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  ScrollView
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { TextStyles, ComponentStyles, Colors } from '../styles/fonts'
@@ -15,8 +17,9 @@ import { getImageSize, getResponsiveSpacing } from '../utils/responsive'
 import { authCheck } from '../lib/auth'
 import api from '../lib/api'
 
-// Import the SVG image
+// Import the SVG images
 import OnboardingNameSvg from '../assets/images/svg/onboarding-name.svg'
+import LogoSvg from '../assets/images/svg/logo.svg'
 
 export default function OnboardingProfileScreen ({ navigation }) {
   const [firstName, setFirstName] = useState('')
@@ -71,82 +74,108 @@ export default function OnboardingProfileScreen ({ navigation }) {
   const imageSize = getImageSize(280)
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Scrollable content area */}
-        <ScrollView
-          style={styles.scrollContent}
-          contentContainerStyle={styles.scrollContentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.imageContainer}>
-            <OnboardingNameSvg
-              width={imageSize}
-              height={imageSize}
-              color={Colors.copy}
-            />
-          </View>
-
-          <Text style={styles.title}>What should we call you?</Text>
-          <Text style={styles.subtitle}>
-            Help others recognize you by adding your name. You can always change
-            this later.
-          </Text>
-
-          <View style={styles.inputContainer}>
-            <View style={styles.inputGroup}>
-              <TextInput
-                style={styles.input}
-                placeholder='Enter your first name'
-                placeholderTextColor={Colors.placeholder}
-                value={firstName}
-                onChangeText={setFirstName}
-                autoCapitalize='words'
-                returnKeyType='next'
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <TextInput
-                style={styles.input}
-                placeholder='Enter your last name'
-                placeholderTextColor={Colors.placeholder}
-                value={lastName}
-                onChangeText={setLastName}
-                autoCapitalize='words'
-                returnKeyType='done'
-                onSubmitEditing={handleContinue}
-              />
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* Fixed buttons at bottom */}
-        <View style={styles.buttonGroup}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.darkButton,
-              (!firstName.trim() || !lastName.trim() || loading) &&
-                styles.disabledButton
-            ]}
-            onPress={handleContinue}
-            disabled={!firstName.trim() || !lastName.trim() || loading}
-          >
-            {loading ? (
-              <ActivityIndicator color='#fff' />
-            ) : (
-              <Text style={styles.darkButtonText}>Continue</Text>
-            )}
-          </TouchableOpacity>
+    <SafeAreaView
+      style={styles.container}
+      edges={['top', 'left', 'right', 'bottom']}
+    >
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        {/* Logo Header */}
+        <View style={styles.logoContainer}>
+          <LogoSvg width={80} height={40} />
         </View>
-      </View>
+
+        <View style={styles.content}>
+          {/* Scrollable content area */}
+          <ScrollView
+            style={styles.scrollContent}
+            contentContainerStyle={styles.scrollContentContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps='handled'
+            keyboardDismissMode='on-drag'
+          >
+            <View style={styles.imageContainer}>
+              <OnboardingNameSvg
+                width={imageSize}
+                height={imageSize}
+                color={Colors.copy}
+              />
+            </View>
+
+            <Text style={styles.title}>What's your name?</Text>
+            <Text style={styles.subtitle}>
+              People need a way to identify you on Eleven, what two-ish words
+              would suit here?
+            </Text>
+
+            <View style={styles.inputContainer}>
+              <View style={styles.inputGroup}>
+                <TextInput
+                  style={styles.input}
+                  placeholder='First name'
+                  placeholderTextColor={Colors.placeholder}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  autoCapitalize='words'
+                  returnKeyType='next'
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <TextInput
+                  style={styles.input}
+                  placeholder='Last name or initial'
+                  placeholderTextColor={Colors.placeholder}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  autoCapitalize='words'
+                  returnKeyType='done'
+                  onSubmitEditing={handleContinue}
+                />
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Fixed buttons at bottom */}
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.darkButton,
+                (!firstName.trim() || !lastName.trim() || loading) &&
+                  styles.disabledButton
+              ]}
+              onPress={handleContinue}
+              disabled={!firstName.trim() || !lastName.trim() || loading}
+            >
+              {loading ? (
+                <ActivityIndicator color='#fff' />
+              ) : (
+                <Text style={styles.darkButtonText}>Continue</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: ComponentStyles.container,
+
+  keyboardAvoidingView: {
+    flex: 1
+  },
+
+  logoContainer: {
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 40
+  },
 
   content: {
     ...ComponentStyles.content,
@@ -172,7 +201,7 @@ const styles = StyleSheet.create({
 
   title: {
     ...TextStyles.title,
-    textAlign: 'left',
+    textAlign: 'center',
     marginBottom: getResponsiveSpacing.elementSpacing * 0.5
   },
 
@@ -183,13 +212,13 @@ const styles = StyleSheet.create({
   },
 
   inputContainer: {
-    width: '100%',
+    alignSelf: 'stretch', // Use available width within container
     marginBottom: getResponsiveSpacing.titleMarginBottom * 0.8,
     gap: getResponsiveSpacing.elementSpacing
   },
 
   inputGroup: {
-    width: '100%'
+    flex: 1 // Take available space
   },
 
   inputLabel: {

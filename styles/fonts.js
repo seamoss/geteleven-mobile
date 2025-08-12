@@ -9,6 +9,9 @@ import {
   getButtonGroupStyles
 } from '../utils/responsive'
 
+// Check if Nexa fonts are available (will be true after fonts are added)
+const NEXA_FONTS_AVAILABLE = true // Set to true after adding Nexa font files
+
 // Font family mappings to match the web app
 export const FontFamilies = {
   // Main body font (Inter equivalent)
@@ -38,27 +41,40 @@ export const FontFamilies = {
     default: 'Inter_700Bold'
   }),
 
-  // Callout/headings font (Poppins equivalent)
-  calloutRegular: Platform.select({
-    ios: 'Poppins-Regular',
-    android: 'Poppins-Regular',
-    default: 'Poppins_400Regular'
-  }),
-  calloutMedium: Platform.select({
-    ios: 'Poppins-Medium',
-    android: 'Poppins-Medium',
-    default: 'Poppins_500Medium'
-  }),
-  calloutSemiBold: Platform.select({
-    ios: 'Poppins-SemiBold',
-    android: 'Poppins-SemiBold',
-    default: 'Poppins_600SemiBold'
-  }),
-  calloutBold: Platform.select({
-    ios: 'Poppins-Bold',
-    android: 'Poppins-Bold',
-    default: 'Poppins_700Bold'
-  })
+  // Callout/headings font - Use Nexa if available, fallback to Poppins
+  calloutRegular: NEXA_FONTS_AVAILABLE
+    ? 'Nexa-Regular' // Use Regular for most headings
+    : Platform.select({
+        ios: 'Poppins-Regular',
+        android: 'Poppins-Regular',
+        default: 'Poppins_400Regular'
+      }),
+  calloutMedium: NEXA_FONTS_AVAILABLE
+    ? 'Nexa-Regular'
+    : Platform.select({
+        ios: 'Poppins-Medium',
+        android: 'Poppins-Medium',
+        default: 'Poppins_500Medium'
+      }),
+  calloutSemiBold: NEXA_FONTS_AVAILABLE
+    ? 'Nexa-Heavy' // Jump to Heavy for emphasis
+    : Platform.select({
+        ios: 'Poppins-SemiBold',
+        android: 'Poppins-SemiBold',
+        default: 'Poppins_600SemiBold'
+      }),
+  calloutBold: NEXA_FONTS_AVAILABLE
+    ? 'Nexa-Heavy' // Bold = Heavy
+    : Platform.select({
+        ios: 'Poppins-Bold',
+        android: 'Poppins-Bold',
+        default: 'Poppins_700Bold'
+      }),
+
+  // Nexa specific variants (for direct use)
+  nexaExtraLight: NEXA_FONTS_AVAILABLE ? 'Nexa-ExtraLight' : null,
+  nexaRegular: NEXA_FONTS_AVAILABLE ? 'Nexa-Regular' : null,
+  nexaHeavy: NEXA_FONTS_AVAILABLE ? 'Nexa-Heavy' : null
 }
 
 // Colors to match web app CSS variables
@@ -79,10 +95,10 @@ export const TextStyles = {
   // Equivalent to h1 in web app
   title: {
     fontFamily: FontFamilies.calloutMedium,
-    fontSize: scaleFont(22),
+    fontSize: scaleFont(32),
     fontWeight: '500',
     color: Colors.foreground,
-    lineHeight: scaleFont(30)
+    lineHeight: scaleFont(40)
   },
 
   // Equivalent to h2 in web app
@@ -159,6 +175,7 @@ export const TextStyles = {
 
 // Common component styles - now responsive
 export const ComponentStyles = {
+  width: '100%',
   container: getResponsiveContainer(),
   content: getResponsiveContent(),
   nav: {

@@ -138,8 +138,13 @@ export default function OnboardingPhotoScreen ({ navigation, route }) {
           />
         </View>
 
-        <Text style={styles.title}>Upload your photo</Text>
-        <Text style={styles.subtitle}>
+        <Text style={styles.title}>Upload an avatar.</Text>
+        <Text
+          style={{
+            ...styles.subtitle,
+            paddingHorizontal: 25
+          }}
+        >
           Choose an image that best represents you. Come on we know you have a
           folder full of them.
         </Text>

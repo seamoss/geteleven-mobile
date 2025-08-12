@@ -15,6 +15,7 @@ import { getImageSize, getResponsiveSpacing } from '../utils/responsive'
 // Import the SVG images
 import MicrophoneSvg from '../assets/images/svg/microphone.svg'
 import PermissionErrorSvg from '../assets/images/svg/permission-error.svg'
+import LogoSvg from '../assets/images/svg/logo.svg'
 
 export default function OnboardingPermissionsScreen ({ navigation }) {
   const [permissionStatus, setPermissionStatus] = useState('unknown') // 'unknown', 'granted', 'denied'
@@ -40,7 +41,7 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
   }
 
   const handleContinue = () => {
-    navigation.navigate('OnboardingTour')
+    navigation.navigate('OnboardingProfile')
   }
 
   const handleSkip = () => {
@@ -88,6 +89,11 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Logo Header */}
+      <View style={styles.logoContainer}>
+        <LogoSvg width={80} height={40} />
+      </View>
+
       <View style={styles.content}>
         {permissionStatus === 'unknown' && (
           <>
@@ -218,6 +224,12 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
 
 const styles = StyleSheet.create({
   container: ComponentStyles.container,
+
+  logoContainer: {
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 40
+  },
 
   content: {
     ...ComponentStyles.content,

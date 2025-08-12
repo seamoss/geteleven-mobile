@@ -132,7 +132,8 @@ export const getButtonGroupStyles = () => ({
     Platform.OS === 'ios'
       ? 0 // SafeAreaView handles the bottom safe area
       : 10, // Small padding for Android
-  paddingTop: getResponsiveSpacing.buttonGroupPadding
+  paddingTop: getResponsiveSpacing.buttonGroupPadding,
+  background: 'transparent'
 })
 
 // Debug helper to log device info (disabled in production)

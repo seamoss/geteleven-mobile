@@ -161,7 +161,7 @@ export default function AddConnectionModal ({ visible, onClose, user }) {
     >
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Add connection</Text>
+          <Text style={styles.headerTitle}>Invite someone</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <X size={24} color={Colors.foreground} strokeWidth={1.5} />
           </TouchableOpacity>
