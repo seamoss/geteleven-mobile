@@ -5,7 +5,6 @@ const screensToUpdate = [
   'OnboardingProfileScreen.js',
   'OnboardingPhotoScreen.js',
   'OnboardingPreviewScreen.js',
-  'SigninScreen.js',
   'SettingsScreen.js',
   'SettingsProfileScreen.js',
   'SettingsAvatarScreen.js', 
