@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.copy,
+    backgroundColor: Colors.foreground,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: Colors.copy,
+    backgroundColor: Colors.foreground,
     borderRadius: 2
   },
   timeText: {

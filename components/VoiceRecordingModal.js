@@ -6,7 +6,8 @@ import {
   Modal,
   TouchableOpacity,
   Alert,
-  Animated
+  Animated,
+  ActivityIndicator
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Audio } from 'expo-av'
@@ -17,6 +18,7 @@ import ElevenAvatar from './ElevenAvatar'
 import { formatConnectionName } from '../lib/util'
 import AudioBubbleSvg from '../assets/images/svg/audio-bubble.svg'
 import { getResponsiveSpacing } from '../utils/responsive'
+import User from '../hooks/user'
 
 export default function VoiceRecordingModal ({
   visible,
@@ -39,10 +41,26 @@ export default function VoiceRecordingModal ({
   const [playbackSound, setPlaybackSound] = useState(null)
   const [playbackPosition, setPlaybackPosition] = useState(0)
   const [modalReady, setModalReady] = useState(false)
+  const [meData, setMeData] = useState(null)
+  const [statusMessageIndex, setStatusMessageIndex] = useState(0)
+
+  // User hook for getting current user data
+  const { me } = User(authToken)
+
+  // Status messages for the sending overlay
+  const statusMessages = [
+    'Encrypting message...',
+    'Securing connection...',
+    'Verifying recipient...',
+    'Transmitting audio...',
+    'Almost there...',
+    'Finalizing delivery...'
+  ]
 
   // Timer ref for recording duration
   const timerRef = useRef(null)
   const playbackRef = useRef(false) // Prevent race conditions
+  const statusMessageTimerRef = useRef(null)
 
   // Fade animation for overlay
   const fadeAnim = useRef(new Animated.Value(0)).current
@@ -69,13 +87,48 @@ export default function VoiceRecordingModal ({
     }
   }, [isRecording])
 
+  // Fetch user data when modal opens
+  useEffect(() => {
+    if (visible && authToken) {
+      me().then(response => {
+        if (response?.data) {
+          setMeData(response.data)
+        }
+      }).catch(err => {
+        console.error('Failed to fetch user data:', err)
+      })
+    }
+  }, [visible, authToken])
+
+  // Cycle through status messages when sending
+  useEffect(() => {
+    if (isSending) {
+      setStatusMessageIndex(0)
+      statusMessageTimerRef.current = setInterval(() => {
+        setStatusMessageIndex(prev => (prev + 1) % statusMessages.length)
+      }, 1500)
+    } else {
+      if (statusMessageTimerRef.current) {
+        clearInterval(statusMessageTimerRef.current)
+        statusMessageTimerRef.current = null
+      }
+      setStatusMessageIndex(0)
+    }
+
+    return () => {
+      if (statusMessageTimerRef.current) {
+        clearInterval(statusMessageTimerRef.current)
+      }
+    }
+  }, [isSending])
+
   // Start recording when modal opens with sequenced animations
   useEffect(() => {
     if (visible) {
       // Show the modal and start animations
       setModalReady(true)
 
-      // Small delay to ensure modal is mounted before animating
+      // Longer delay to ensure SafeAreaView layout is calculated before animating
       setTimeout(() => {
         // First fade in the overlay, then slide up the modal
         Animated.sequence([
@@ -95,7 +148,7 @@ export default function VoiceRecordingModal ({
             startRecording()
           }
         })
-      }, 50)
+      }, 150)
     } else if (modalReady) {
       // Sequence the closing animations: first slide down, then fade out
       Animated.sequence([
@@ -264,6 +317,9 @@ export default function VoiceRecordingModal ({
       // Wait for both upload progress and actual send to complete
       await Promise.all([uploadPromise, sendPromise])
 
+      // Add delay to let users see the sending animation complete
+      await new Promise(resolve => setTimeout(resolve, 1300))
+      
       // If this is a new user from deep link, redirect to onboarding after successful send
       if (isNewUser) {
         // Clear the flag
@@ -435,7 +491,12 @@ export default function VoiceRecordingModal ({
             }
           ]}
         >
-          <SafeAreaView style={styles.container}>
+          <SafeAreaView 
+            style={styles.container}
+            onLayout={() => {
+              // Ensure layout is complete before any state changes
+            }}
+          >
             {/* Close button positioned at top right */}
             <TouchableOpacity
               style={styles.closeButton}
@@ -527,28 +588,47 @@ export default function VoiceRecordingModal ({
               <View style={styles.uploadOverlay}>
                 <View style={styles.uploadModal}>
                   <View style={styles.uploadContent}>
-                    <Text style={styles.uploadTitle}>Sending message...</Text>
-                    <Text style={styles.uploadSubtitle}>
-                      to{' '}
-                      {connection
-                        ? formatConnectionName(connection)
-                        : 'connection'}
-                    </Text>
-
-                    {/* Progress Bar Container */}
-                    <View style={styles.progressContainer}>
-                      <View style={styles.progressTrack}>
-                        <View
-                          style={[
-                            styles.progressFill,
-                            { width: `${uploadProgress}%` }
-                          ]}
-                        />
-                      </View>
-                      <Text style={styles.progressText}>
-                        {Math.round(uploadProgress)}%
-                      </Text>
+                    {/* Avatars Row */}
+                    <View style={styles.avatarsRow}>
+                      {/* FROM Avatar */}
+                      <ElevenAvatar
+                        src={meData?.avatar_url}
+                        width={60}
+                        height={60}
+                        borderRadius={30}
+                        borderWidth={2}
+                        borderColor={Colors.border}
+                        showNameLabel={false}
+                      />
+                      
+                      {/* Spinning Progress Indicator */}
+                      <ActivityIndicator 
+                        size="small" 
+                        color={Colors.foreground}
+                        style={styles.spinner}
+                      />
+                      
+                      {/* TO Avatar */}
+                      <ElevenAvatar
+                        src={connection?.avatar_url}
+                        width={60}
+                        height={60}
+                        borderRadius={30}
+                        borderWidth={2}
+                        borderColor={Colors.border}
+                        showNameLabel={false}
+                      />
                     </View>
+
+                    {/* Text Below Avatars */}
+                    <Text style={styles.uploadTitle}>
+                      Sending to {connection ? formatConnectionName(connection) : 'connection'}
+                    </Text>
+                    
+                    {/* Status Message */}
+                    <Text style={styles.statusMessage}>
+                      {statusMessages[statusMessageIndex]}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -689,49 +769,38 @@ const styles = StyleSheet.create({
   uploadContent: {
     alignItems: 'center'
   },
+  avatarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24
+  },
+  spinner: {
+    marginHorizontal: 20
+  },
   uploadTitle: {
     ...TextStyles.h3,
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: 'Poppins_600SemiBold',
     color: Colors.foreground,
     marginBottom: 8,
     textAlign: 'center'
   },
-  uploadSubtitle: {
-    ...TextStyles.foreground,
+  statusMessage: {
+    ...TextStyles.body,
+    fontSize: 14,
     color: Colors.placeholder,
-    marginBottom: 32,
-    textAlign: 'center'
-  },
-  progressContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 0
-  },
-  progressTrack: {
-    width: '100%',
-    height: 8,
-    backgroundColor: 'rgba(2, 6, 23, 0.1)',
-    borderRadius: 4,
-    marginBottom: 12,
-    overflow: 'hidden'
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.foreground,
-    borderRadius: 2,
-    minWidth: 8 // Ensure some width is always visible
-  },
-  progressText: {
-    ...TextStyles.caption,
-    color: Colors.foreground,
-    fontSize: 16,
-    fontWeight: '600'
+    textAlign: 'center',
+    fontStyle: 'italic'
   },
   // Bottom Action Toolbar Styles (matching AddConnectionModal)
   actionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingVertical: 10,
-    marginBottom: 15
+    paddingBottom: 30,
+    marginBottom: 0
   },
   actionButton: {
     alignItems: 'center',
