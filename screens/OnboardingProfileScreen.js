@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import {
   View,
   Text,
@@ -8,7 +8,9 @@ import {
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  ScrollView,
+  Keyboard
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { TextStyles, ComponentStyles, Colors } from '../styles/fonts'
@@ -24,8 +26,38 @@ export default function OnboardingProfileScreen ({ navigation }) {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [loading, setLoading] = useState(false)
+  const scrollViewRef = useRef(null)
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
 
   const { authToken } = authCheck()
+
+  // Handle keyboard events to auto-scroll
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true)
+        // Scroll to show input fields when keyboard opens
+        setTimeout(() => {
+          scrollViewRef.current?.scrollTo({ y: 130, animated: true })
+        }, 100)
+      }
+    )
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false)
+        // Optionally scroll back to top when keyboard closes
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true })
+      }
+    )
+
+    return () => {
+      keyboardDidShowListener.remove()
+      keyboardDidHideListener.remove()
+    }
+  }, [])
 
   const handleContinue = async () => {
     if (!firstName.trim() || !lastName.trim()) {
@@ -70,7 +102,7 @@ export default function OnboardingProfileScreen ({ navigation }) {
     }
   }
 
-  const imageSize = 210
+  const imageSize = 200
 
   return (
     <SafeAreaView
@@ -83,13 +115,19 @@ export default function OnboardingProfileScreen ({ navigation }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={0}
         >
-          {/* Logo Header */}
-          <View style={styles.logoContainer}>
-            <LogoSvg width={80} height={40} />
-          </View>
+          <ScrollView
+            ref={scrollViewRef}
+            contentContainerStyle={styles.scrollContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Logo Header */}
+            <View style={styles.logoContainer}>
+              <LogoSvg width={80} height={40} />
+            </View>
 
-          {/* Content area */}
-          <View style={styles.contentArea}>
+            {/* Content area */}
+            <View style={styles.contentArea}>
             <View style={styles.imageContainer}>
               <OnboardingNameSvg
                 width={imageSize}
@@ -105,32 +143,40 @@ export default function OnboardingProfileScreen ({ navigation }) {
             </Text>
 
             <View style={styles.inputContainer}>
-              <View style={styles.inputGroup}>
-                <TextInput
-                  style={styles.input}
-                  placeholder='First name'
-                  placeholderTextColor={Colors.placeholder}
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  autoCapitalize='words'
-                  returnKeyType='next'
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <TextInput
-                  style={styles.input}
-                  placeholder='Last name or initial'
-                  placeholderTextColor={Colors.placeholder}
-                  value={lastName}
-                  onChangeText={setLastName}
-                  autoCapitalize='words'
-                  returnKeyType='done'
-                  onSubmitEditing={handleContinue}
-                />
-              </View>
+              <TextInput
+                style={styles.input}
+                placeholder='First name'
+                placeholderTextColor={Colors.placeholder}
+                value={firstName}
+                onChangeText={setFirstName}
+                autoCapitalize='words'
+                returnKeyType='next'
+                onFocus={() => {
+                  // Scroll to show both fields when either field is focused
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollTo({ y: 130, animated: true })
+                  }, 300)
+                }}
+              />
+              <TextInput
+                style={[styles.input, { marginTop: 12 }]}
+                placeholder='Last name or initial'
+                placeholderTextColor={Colors.placeholder}
+                value={lastName}
+                onChangeText={setLastName}
+                autoCapitalize='words'
+                returnKeyType='done'
+                onSubmitEditing={handleContinue}
+                onFocus={() => {
+                  // Scroll to show both fields when either field is focused
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollTo({ y: 130, animated: true })
+                  }, 300)
+                }}
+              />
             </View>
           </View>
+          </ScrollView>
         </KeyboardAvoidingView>
 
         {/* Fixed buttons at bottom - outside KeyboardAvoidingView */}
@@ -168,10 +214,15 @@ const styles = StyleSheet.create({
     flex: 1
   },
 
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 20
+  },
+
   logoContainer: {
     alignItems: 'center',
     paddingTop: 20,
-    paddingBottom: 40
+    paddingBottom: 0
   },
 
   content: {
@@ -211,19 +262,9 @@ const styles = StyleSheet.create({
 
   inputContainer: {
     marginBottom: getResponsiveSpacing.titleMarginBottom * 0.8,
-    gap: getResponsiveSpacing.elementSpacing,
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center'
-  },
-
-  inputGroup: {
-    flex: 1 // Take available space
-  },
-
-  inputLabel: {
-    ...TextStyles.body,
-    marginBottom: getResponsiveSpacing.elementSpacing * 0.4
   },
 
   input: {
