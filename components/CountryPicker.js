@@ -9,6 +9,7 @@ import {
   TextInput,
   SafeAreaView
 } from 'react-native'
+import { Colors, TextStyles } from '../styles/fonts'
 
 const CountryPicker = ({
   countries,
@@ -52,10 +53,9 @@ const CountryPicker = ({
         style={styles.pickerButton}
         onPress={() => setIsVisible(true)}
       >
+        <Text style={styles.label}>Country / Region</Text>
         <Text style={styles.pickerButtonText}>
-          {selectedCountry
-            ? countries[selectedCountry]?.secondary
-            : placeholder}
+          {selectedCountry ? countries[selectedCountry]?.primary : placeholder}
         </Text>
       </TouchableOpacity>
 
@@ -103,18 +103,28 @@ const CountryPicker = ({
 
 const styles = StyleSheet.create({
   pickerButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 16,
+    paddingHorizontal: 12,
+    paddingTop: 14,
+    paddingBottom: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
     borderRadius: 8,
-    backgroundColor: '#fff',
-    minWidth: 100
+    backgroundColor: Colors.white,
+    width: '100%',
+    position: 'relative'
+  },
+  label: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 4,
+    fontFamily: TextStyles.body.fontFamily
   },
   pickerButtonText: {
-    fontSize: 16,
-    color: '#020617',
-    textAlign: 'center'
+    fontSize: TextStyles.buttonDark.fontSize,
+    fontWeight: TextStyles.buttonDark.fontWeight,
+    fontFamily: TextStyles.buttonDark.fontFamily,
+    color: Colors.foreground,
+    textAlign: 'left'
   },
   modalContainer: {
     flex: 1,

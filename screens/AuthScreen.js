@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
+import CountryPicker from '../components/CountryPicker'
 import PhoneInput from '../components/PhoneInput'
 import OTPInput from '../components/OTPInput'
 import useOTP from '../hooks/useOTP'
@@ -42,7 +43,7 @@ export default function AuthScreen ({ navigation, route }) {
   const [loading, setLoading] = useState(false)
   const [hasError, setHasError] = useState(false)
   const [phone, setPhone] = useState('')
-  const [selectedCountry] = useState('US') // Defaulting to US only
+  const [selectedCountry, setSelectedCountry] = useState('US') // Default to US
   const [otp, setOtp] = useState('')
   const [step, setStep] = useState('send') // 'send' or 'verify'
 
@@ -334,14 +335,22 @@ export default function AuthScreen ({ navigation, route }) {
 
             {step === 'send' ? (
               <View style={styles.inputContainer}>
-                <PhoneInput
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder='Phone number'
-                  hasError={hasError}
-                  countryCode={selectedCountry}
-                  prefix='+1'
+                <CountryPicker
+                  countries={countries}
+                  selectedCountry={selectedCountry}
+                  onSelect={setSelectedCountry}
+                  placeholder='Select your country'
                 />
+                <View style={{ marginTop: 12 }}>
+                  <PhoneInput
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder='Phone number'
+                    hasError={hasError}
+                    countryCode={selectedCountry}
+                    prefix={countries[selectedCountry]?.secondary || '+1'}
+                  />
+                </View>
               </View>
             ) : (
               <OTPInput value={otp} onChangeText={setOtp} hasError={hasError} />
