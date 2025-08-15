@@ -17,6 +17,7 @@ import { TextStyles, ComponentStyles, Colors } from '../styles/fonts'
 import { authCheck } from '../lib/auth'
 import User from '../hooks/user'
 import navTransition from '../hooks/transition'
+import PushNotificationService from '../services/PushNotificationService'
 import ElevenAvatar from '../components/ElevenAvatar'
 import AddConnectionModal from '../components/AddConnectionModal'
 import UpgradeModal from '../components/UpgradeModal'
@@ -145,7 +146,20 @@ export default function ConnectionsScreen ({ navigation, route }) {
     }
 
     fetchData(false)
-  }, [isAuthenticated, checkingAuth])
+    
+    // Check and refresh push token for existing users
+    if (authToken) {
+      PushNotificationService.checkAndRefreshToken(authToken)
+        .then(token => {
+          if (token) {
+            console.log('Push token refreshed for existing user')
+          }
+        })
+        .catch(error => {
+          console.error('Error refreshing push token:', error)
+        })
+    }
+  }, [isAuthenticated, checkingAuth, authToken])
 
   // Refresh connections when screen comes into focus
   // This is especially important after sending a message to a new connection

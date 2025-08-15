@@ -145,17 +145,22 @@ const config = {
     },
     updates: {
       url: 'https://u.expo.dev/a15191fc-bdca-4e57-ac76-b1b678bcac7f'
-    }
+    },
+    plugins: [
+      // Only include plugins for EAS builds, not dev builds
+      ...(process.env.EAS_BUILD ? [
+        [
+          "expo-notifications",
+          {
+            icon: "./assets/notification-icon.png",
+            color: "#020617",
+            sounds: []
+          }
+        ],
+        "expo-apple-authentication"
+      ] : [])
+    ]
   }
 }
-
-// Only add plugins when not in development or when explicitly building
-// if (!IS_DEV || process.env.EAS_BUILD) {
-//   config.expo.plugins = [
-//     "expo-notifications",
-//     "expo-apple-authentication",
-//     "expo-in-app-purchases"
-//   ];
-// }
 
 export default config

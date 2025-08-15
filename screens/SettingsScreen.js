@@ -19,7 +19,7 @@ import {
   X,
   LogOut,
   Bug,
-  CreditCard
+  CreditCard,
 } from 'lucide-react-native'
 import { authCheck, signOut } from '../lib/auth'
 import { replaceDomain, formatAvatarName } from '../lib/util'
@@ -154,6 +154,7 @@ export default function SettingsScreen () {
   const handleDebugPress = () => {
     navigate('DebugSettings')
   }
+
 
   const handleCancelSubscriptionPress = () => {
     Alert.alert(
@@ -315,7 +316,7 @@ export default function SettingsScreen () {
               <SettingsRow
                 Icon={Bug}
                 label='Debug Settings'
-                tip='Development tools for testing permissions and onboarding.'
+                tip='Development tools for testing permissions, onboarding, and push notifications.'
                 onPress={handleDebugPress}
               />
             )}

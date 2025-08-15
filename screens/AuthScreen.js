@@ -18,6 +18,7 @@ import OTPInput from '../components/OTPInput'
 import useOTP from '../hooks/useOTP'
 import User from '../hooks/user'
 import { authCheck } from '../lib/auth'
+import PushNotificationService from '../services/PushNotificationService'
 import {
   TextStyles,
   ComponentStyles,
@@ -154,20 +155,26 @@ export default function AuthScreen ({ navigation, route }) {
       const cleanPhone = phone.replace(/\D/g, '')
       const countryCode = countries[selectedCountry].secondary
 
+      // Get push token before verification
+      const expoPushToken = await PushNotificationService.registerForPushNotifications()
+      
       console.log('Verifying OTP:', {
         countryCode,
         phone: cleanPhone,
         otp,
         fullNumber: `${countryCode}${cleanPhone}`,
         createManager: isSignup,
-        mode
+        mode,
+        expoPushToken
       })
 
       const result = await verifyOTP({
         countryCode,
         phone: cleanPhone,
         otp,
-        createManager: isSignup // Create account for signup, signin for existing users
+        createManager: isSignup, // Create account for signup, signin for existing users
+        expoPushToken, // Include push token in verification
+        platform: Platform.OS // Include platform information
       })
 
       console.log('OTP verification response:', result)
@@ -182,6 +189,11 @@ export default function AuthScreen ({ navigation, route }) {
 
         // Store auth token
         await AsyncStorage.setItem('authToken', result.data.authToken)
+        
+        // Update push token on server if we have one
+        if (expoPushToken) {
+          await PushNotificationService.updatePushTokenOnServer(result.data.authToken, expoPushToken)
+        }
 
         if (isSignup) {
           // Handle signup success

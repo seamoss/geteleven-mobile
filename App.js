@@ -7,6 +7,7 @@ import { initializeAudioMode } from './utils/audioUtils'
 import { initializeAutoUpdates } from './utils/updateUtils'
 import { useFonts } from 'expo-font'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import PushNotificationService from './services/PushNotificationService'
 import {
   Inter_300Light,
   Inter_400Regular,
@@ -104,6 +105,9 @@ export default function App () {
     initializeAutoUpdates()
     initializeAudioMode()
     
+    // Initialize push notifications
+    initializePushNotifications()
+    
     // Get initial URL if app was opened from a deep link
     Linking.getInitialURL().then((url) => {
       if (url) {
@@ -116,8 +120,29 @@ export default function App () {
     
     return () => {
       subscription.remove()
+      PushNotificationService.removeNotificationListeners()
     }
   }, [])
+  
+  const initializePushNotifications = async () => {
+    try {
+      // Register for push notifications
+      const token = await PushNotificationService.registerForPushNotifications()
+      
+      if (token) {
+        // Check if user is authenticated to update token on server
+        const authToken = await AsyncStorage.getItem('authToken')
+        if (authToken) {
+          await PushNotificationService.updatePushTokenOnServer(authToken, token)
+        }
+      }
+      
+      // Setup notification listeners
+      PushNotificationService.setupNotificationListeners(navigationRef.current)
+    } catch (error) {
+      console.error('Error initializing push notifications:', error)
+    }
+  }
   
   const handleDeepLink = (event) => {
     if (navigationRef.current && isReady) {

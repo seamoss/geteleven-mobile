@@ -1,12 +1,15 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Linking
+  Linking,
+  ActivityIndicator,
+  ScrollView
 } from 'react-native'
+import * as Clipboard from 'expo-clipboard'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Audio } from 'expo-av'
@@ -17,10 +20,17 @@ import {
   RotateCcw,
   Settings,
   Smartphone,
-  PlayCircle
+  PlayCircle,
+  Bell,
+  Copy,
+  RefreshCw,
+  Send
 } from 'lucide-react-native'
 import { Colors } from '../styles/fonts'
 import useTransition from '../hooks/transition'
+import { authCheck } from '../lib/auth'
+import { api } from '../lib/api'
+import PushNotificationService from '../services/PushNotificationService'
 
 const DebugRow = ({
   Icon,
@@ -63,8 +73,21 @@ const DebugRow = ({
 
 export default function DebugSettingsScreen () {
   const { navigate } = useTransition()
+  const { authToken } = authCheck()
   const [loading, setLoading] = useState(false)
   const [permissionStatus, setPermissionStatus] = useState('unknown')
+  
+  // Push notification state
+  const [pushToken, setPushToken] = useState(null)
+  const [tokenInfo, setTokenInfo] = useState(null)
+  const [pushLoading, setPushLoading] = useState(false)
+  const [sendingTest, setSendingTest] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+
+  useEffect(() => {
+    loadPushToken()
+    fetchTokenInfo()
+  }, [])
 
   const checkMicrophonePermission = async () => {
     try {
@@ -208,9 +231,125 @@ export default function DebugSettingsScreen () {
     )
   }
 
+  // Push notification functions
+  const loadPushToken = async () => {
+    try {
+      const token = await AsyncStorage.getItem('expoPushToken')
+      setPushToken(token)
+    } catch (error) {
+      console.error('Error loading push token:', error)
+    }
+  }
+
+  const fetchTokenInfo = async () => {
+    if (!authToken) return
+    
+    setPushLoading(true)
+    try {
+      const response = await api('GET', '/users/me', {}, authToken)
+      if (response.data?.expo_push_tokens) {
+        setTokenInfo(response.data.expo_push_tokens)
+      }
+    } catch (error) {
+      console.error('Error fetching token info:', error)
+    } finally {
+      setPushLoading(false)
+    }
+  }
+
+  const handleCopyToken = async () => {
+    if (pushToken) {
+      await Clipboard.setStringAsync(pushToken)
+      Alert.alert('Copied', 'Push token copied to clipboard')
+    }
+  }
+
+  const handleRefreshToken = async () => {
+    setRefreshing(true)
+    try {
+      const newToken = await PushNotificationService.registerForPushNotifications()
+      
+      if (newToken) {
+        setPushToken(newToken)
+        
+        if (authToken) {
+          await PushNotificationService.updatePushTokenOnServer(authToken, newToken)
+          await fetchTokenInfo()
+        }
+        
+        Alert.alert('Success', 'Push token refreshed successfully')
+      } else {
+        Alert.alert('Error', 'Failed to refresh push token')
+      }
+    } catch (error) {
+      console.error('Error refreshing token:', error)
+      Alert.alert('Error', 'Failed to refresh push token')
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  const handleSendTestNotification = async () => {
+    if (!authToken) {
+      Alert.alert('Error', 'Not authenticated')
+      return
+    }
+
+    setSendingTest(true)
+    try {
+      const response = await api(
+        'POST',
+        '/debug/push-notification-test',
+        {
+          title: 'Test Notification',
+          body: `Test from Eleven Debug at ${new Date().toLocaleTimeString()}`,
+          data: {
+            type: 'debug_test',
+            timestamp: Date.now()
+          }
+        },
+        authToken
+      )
+
+      if (response.error) {
+        throw new Error(response.error)
+      }
+
+      Alert.alert('Success', 'Test notification sent! You should receive it shortly.')
+    } catch (error) {
+      console.error('Error sending test notification:', error)
+      Alert.alert('Error', `Failed to send test notification: ${error.message}`)
+    } finally {
+      setSendingTest(false)
+    }
+  }
+
+  const handleRequestPushPermission = async () => {
+    const token = await PushNotificationService.registerForPushNotifications()
+    if (token) {
+      setPushToken(token)
+      if (authToken) {
+        await PushNotificationService.updatePushTokenOnServer(authToken, token)
+        await fetchTokenInfo()
+      }
+      Alert.alert('Success', 'Push notifications enabled')
+    } else {
+      Alert.alert(
+        'Push Notifications Not Available', 
+        'Push notifications require an EAS development build or production build. They are not supported in Expo Go or basic dev builds.\n\nTo test:\n• Build with: eas build --profile development\n• Or run: npx expo run:ios'
+      )
+    }
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Never'
+    const date = new Date(dateString)
+    return date.toLocaleString()
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView style={styles.content}>
         {/* Header with Debug Settings title and floating X */}
         <View style={styles.headerContainer}>
           <Text style={styles.header}>Debug Settings</Text>
@@ -234,6 +373,7 @@ export default function DebugSettingsScreen () {
 
         {/* Debug Options */}
         <View style={styles.debugGroup}>
+          <Text style={styles.sectionTitle}>General Debug</Text>
           <DebugRow
             Icon={Mic}
             label='Check Microphone Permission'
@@ -285,6 +425,86 @@ export default function DebugSettingsScreen () {
           />
         </View>
 
+        {/* Push Notifications Section */}
+        <View style={styles.debugGroup}>
+          <Text style={styles.sectionTitle}>Push Notifications</Text>
+          
+          {/* Current Token Display */}
+          <View style={styles.tokenSection}>
+            <Text style={styles.tokenLabel}>Current Push Token</Text>
+            <View style={styles.tokenContainer}>
+              {pushToken ? (
+                <>
+                  <Text style={styles.tokenText} numberOfLines={2}>
+                    {pushToken}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.iconButton}
+                    onPress={handleCopyToken}
+                  >
+                    <Copy size={16} color={Colors.copy} />
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text style={styles.noTokenText}>No push token found</Text>
+              )}
+            </View>
+          </View>
+
+          {/* Server Tokens Info */}
+          <View style={styles.tokenSection}>
+            <Text style={styles.tokenLabel}>Server-Side Tokens</Text>
+            {pushLoading ? (
+              <ActivityIndicator size="small" color={Colors.copy} style={styles.loader} />
+            ) : tokenInfo && tokenInfo.length > 0 ? (
+              <View style={styles.serverTokensContainer}>
+                {tokenInfo.map((token, index) => (
+                  <View key={token.id} style={styles.tokenInfoCard}>
+                    <Text style={styles.tokenInfoText}>
+                      #{index + 1} • {token.platform || 'Unknown'} • {token.is_active ? '✅' : '❌'}
+                    </Text>
+                    <Text style={styles.tokenInfoSubtext}>
+                      Created: {formatDate(token.created_at)}
+                    </Text>
+                  </View>
+                ))}
+                <Text style={styles.tokenSummary}>
+                  Total: {tokenInfo.length} • Active: {tokenInfo.filter(t => t.is_active).length}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.noTokenText}>No tokens registered on server</Text>
+            )}
+          </View>
+
+          {/* Push Actions */}
+          {!pushToken ? (
+            <DebugRow
+              Icon={Bell}
+              label='Request Push Permission'
+              tip='Enable push notifications for this device.'
+              onPress={handleRequestPushPermission}
+            />
+          ) : (
+            <>
+              <DebugRow
+                Icon={RefreshCw}
+                label='Refresh Push Token'
+                tip='Generate new token and update server.'
+                onPress={handleRefreshToken}
+                disabled={refreshing}
+              />
+              <DebugRow
+                Icon={Send}
+                label='Send Test Notification'
+                tip='Send test push notification to this device.'
+                onPress={handleSendTestNotification}
+                disabled={sendingTest || !pushToken}
+              />
+            </>
+          )}
+        </View>
+
         {/* Current Status */}
         {permissionStatus !== 'unknown' && (
           <View style={styles.statusContainer}>
@@ -314,7 +534,7 @@ export default function DebugSettingsScreen () {
             </View>
           </View>
         )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -448,5 +668,76 @@ const styles = StyleSheet.create({
   },
   statusTextBlocked: {
     color: '#dc2626'
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.copy,
+    marginBottom: 15,
+    marginTop: 10
+  },
+  tokenSection: {
+    marginBottom: 20
+  },
+  tokenLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.copy,
+    marginBottom: 8
+  },
+  tokenContainer: {
+    backgroundColor: '#f8fafc',
+    padding: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 44
+  },
+  tokenText: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    flex: 1,
+    marginRight: 8,
+    color: Colors.copy
+  },
+  noTokenText: {
+    fontSize: 12,
+    color: Colors.placeholder,
+    fontStyle: 'italic'
+  },
+  iconButton: {
+    padding: 4
+  },
+  loader: {
+    alignSelf: 'flex-start',
+    marginVertical: 8
+  },
+  serverTokensContainer: {
+    backgroundColor: '#f8fafc',
+    padding: 12,
+    borderRadius: 8
+  },
+  tokenInfoCard: {
+    marginBottom: 8
+  },
+  tokenInfoText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.copy,
+    marginBottom: 2
+  },
+  tokenInfoSubtext: {
+    fontSize: 10,
+    color: Colors.placeholder
+  },
+  tokenSummary: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.placeholder,
+    marginTop: 4,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0'
   }
 })

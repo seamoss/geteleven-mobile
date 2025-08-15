@@ -93,16 +93,26 @@ const useOTP = () => {
    * @param {string} phone - The user's phone number.
    * @param {string} otp - The OTP code sent to the user's phone number.
    * @param {boolean} createManager - Whether to create a manager account.
+   * @param {string} expoPushToken - The Expo push notification token.
+   * @param {string} platform - The platform (ios/android).
    *
    * @returns {Promise<object>}
    */
-  const verifyOTP = async ({ countryCode, phone, otp, createManager }) => {
-    return await api('post', '/auth/otp/verify', {
+  const verifyOTP = async ({ countryCode, phone, otp, createManager, expoPushToken, platform }) => {
+    const payload = {
       countryCode: countryCode,
       phone: parseInt(phone, 10),
       otp,
       createManager
-    })
+    }
+    
+    // Include push token and platform if available
+    if (expoPushToken) {
+      payload.expoPushToken = expoPushToken
+      payload.platform = platform
+    }
+    
+    return await api('post', '/auth/otp/verify', payload)
   }
 
   return {
