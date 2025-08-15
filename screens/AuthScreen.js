@@ -155,8 +155,8 @@ export default function AuthScreen ({ navigation, route }) {
       const cleanPhone = phone.replace(/\D/g, '')
       const countryCode = countries[selectedCountry].secondary
 
-      // Get push token before verification
-      const expoPushToken = await PushNotificationService.registerForPushNotifications()
+      // Get stored push token (don't request permission here)
+      const expoPushToken = await PushNotificationService.getStoredToken()
       
       console.log('Verifying OTP:', {
         countryCode,

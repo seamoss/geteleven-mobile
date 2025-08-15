@@ -165,6 +165,15 @@ class PushNotificationService {
   async clearStoredToken() {
     await AsyncStorage.removeItem('expoPushToken')
   }
+
+  async getStoredToken() {
+    try {
+      return await AsyncStorage.getItem('expoPushToken')
+    } catch (error) {
+      console.error('Error getting stored push token:', error)
+      return null
+    }
+  }
 }
 
 export default new PushNotificationService()

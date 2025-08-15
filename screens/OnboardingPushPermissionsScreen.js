@@ -5,35 +5,47 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  ScrollView
+  ScrollView,
+  Platform
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Audio } from 'expo-av'
 import { TextStyles, ComponentStyles, Colors } from '../styles/fonts'
 import { getImageSize, getResponsiveSpacing } from '../utils/responsive'
+import PushNotificationService from '../services/PushNotificationService'
+import { authCheck } from '../lib/auth'
 
 // Import the SVG images
-import MicrophoneSvg from '../assets/images/svg/microphone.svg'
+import MessagesSvg from '../assets/images/svg/messages.svg'
 import PermissionErrorSvg from '../assets/images/svg/permission-error.svg'
 import LogoSvg from '../assets/images/svg/logo.svg'
 
-export default function OnboardingPermissionsScreen ({ navigation }) {
-  const [permissionStatus, setPermissionStatus] = useState('unknown') // 'unknown', 'granted', 'denied'
+export default function OnboardingPushPermissionsScreen ({ navigation }) {
+  const { authToken } = authCheck()
+  const [permissionStatus, setPermissionStatus] = useState('unknown') // 'unknown', 'granted', 'denied', 'unavailable'
   const [loading, setLoading] = useState(false)
 
   const handleRequestPermission = async () => {
     setLoading(true)
 
     try {
-      const { status } = await Audio.requestPermissionsAsync()
-      
-      if (status === 'granted') {
+      const token = await PushNotificationService.registerForPushNotifications()
+
+      if (token) {
         setPermissionStatus('granted')
+
+        // Update token on server if we have auth
+        if (authToken) {
+          await PushNotificationService.updatePushTokenOnServer(
+            authToken,
+            token
+          )
+        }
       } else {
-        setPermissionStatus('denied')
+        // Push notifications not available (likely dev build)
+        setPermissionStatus('unavailable')
       }
     } catch (error) {
-      console.error('Error requesting microphone permission:', error)
+      console.error('Error requesting push notification permission:', error)
       setPermissionStatus('denied')
     } finally {
       setLoading(false)
@@ -45,19 +57,19 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
   }
 
   const handleSkip = () => {
-    // Show alert explaining why permission is needed
+    // Allow skipping since push notifications are optional
     Alert.alert(
-      'Microphone Permission Required',
-      "Eleven requires microphone access to send voice messages. Without this permission, you won't be able to record and send messages to your connections.",
+      'Skip Push Notifications?',
+      'You can always enable push notifications later in your settings.',
       [
         {
-          text: 'Try Again',
+          text: 'Enable Now',
           onPress: handleRequestPermission
         },
         {
-          text: 'Continue Anyway',
-          style: 'destructive',
-          onPress: () => navigation.navigate('OnboardingProfile')
+          text: 'Skip for Now',
+          style: 'cancel',
+          onPress: handleContinue
         }
       ]
     )
@@ -67,17 +79,16 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
   useEffect(() => {
     const checkPermission = async () => {
       try {
-        const { status } = await Audio.getPermissionsAsync()
-        
-        if (status === 'granted') {
+        // Try to get existing token from storage
+        const existingToken = await PushNotificationService.getStoredToken()
+
+        if (existingToken) {
           setPermissionStatus('granted')
         } else {
-          // Don't immediately show error state - let user try to grant permission first
-          // Only show error after they've attempted to grant and it was denied
           setPermissionStatus('unknown')
         }
       } catch (error) {
-        console.error('Error checking microphone permission:', error)
+        console.error('Error checking push notification permission:', error)
         setPermissionStatus('unknown')
       }
     }
@@ -104,16 +115,17 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.imageContainer}>
-                <MicrophoneSvg
+                <MessagesSvg
                   width={imageSize}
                   height={imageSize}
                   color={Colors.copy}
                 />
               </View>
-              <Text style={styles.title}>Permissions, please!</Text>
+              <Text style={styles.title}>Stay in the loop!</Text>
               <Text style={styles.subtitle}>
-                Before we can send voice messages, we need permission to use
-                your microphone. Click the button below to grant permission.
+                Enable push notifications to recieve notifications like
+                reminders or app notices. Don't worry, we will not send messages
+                unless you specicially enable them in your settings.
               </Text>
             </ScrollView>
 
@@ -125,7 +137,7 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
                 disabled={loading}
               >
                 <Text style={styles.darkButtonText}>
-                  {loading ? 'Requesting...' : 'Grant Permission'}
+                  {loading ? 'Enabling...' : 'Enable Notifications'}
                 </Text>
               </TouchableOpacity>
 
@@ -149,16 +161,16 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.imageContainer}>
-                <MicrophoneSvg
+                <MessagesSvg
                   width={imageSize}
                   height={imageSize}
                   color={Colors.copy}
                 />
               </View>
-              <Text style={styles.title}>Permissions look great!</Text>
+              <Text style={styles.title}>You're all set!</Text>
               <Text style={styles.subtitle}>
-                Huzzah! have permission to access your microphone. You're all
-                set to send messages to your connections.
+                Perfect! You'll now receive push notifications for the
+                notification types you enable.
               </Text>
             </ScrollView>
 
@@ -189,13 +201,11 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
                   color={Colors.copy}
                 />
               </View>
-              <Text style={styles.title}>
-                Uh oh! Something isn't quite right.
-              </Text>
+              <Text style={styles.title}>Notifications were declined</Text>
               <Text style={styles.subtitle}>
-                It looks like microphone permission was denied. To send voice
-                messages, you'll need to enable microphone access in your device
-                settings.
+                No worries! You can still use Eleven without push notifications.
+                You can enable them later in your device settings if you change
+                your mind.
               </Text>
             </ScrollView>
 
@@ -212,7 +222,42 @@ export default function OnboardingPermissionsScreen ({ navigation }) {
                 style={[styles.button, styles.lightButton]}
                 onPress={handleContinue}
               >
-                <Text style={styles.lightButtonText}>Continue Anyway</Text>
+                <Text style={styles.lightButtonText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {permissionStatus === 'unavailable' && (
+          <>
+            {/* Scrollable content area */}
+            <ScrollView
+              style={styles.scrollContent}
+              contentContainerStyle={styles.scrollContentContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.imageContainer}>
+                <MessagesSvg
+                  width={imageSize}
+                  height={imageSize}
+                  color={Colors.copy}
+                />
+              </View>
+              <Text style={styles.title}>Push notifications not available</Text>
+              <Text style={styles.subtitle}>
+                Push notifications require a production or EAS development
+                build. You can continue using Eleven and enable notifications
+                when you install the final app.
+              </Text>
+            </ScrollView>
+
+            {/* Fixed buttons at bottom */}
+            <View style={styles.buttonGroup}>
+              <TouchableOpacity
+                style={[styles.button, styles.darkButton]}
+                onPress={handleContinue}
+              >
+                <Text style={styles.darkButtonText}>Continue</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -255,7 +300,7 @@ const styles = StyleSheet.create({
 
   title: {
     ...TextStyles.title,
-    textAlign: 'left',
+    textAlign: 'center',
     marginBottom: getResponsiveSpacing.elementSpacing * 0.5
   },
 

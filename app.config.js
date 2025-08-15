@@ -148,17 +148,19 @@ const config = {
     },
     plugins: [
       // Only include plugins for EAS builds, not dev builds
-      ...(process.env.EAS_BUILD ? [
-        [
-          "expo-notifications",
-          {
-            icon: "./assets/notification-icon.png",
-            color: "#020617",
-            sounds: []
-          }
-        ],
-        "expo-apple-authentication"
-      ] : [])
+      ...(process.env.EAS_BUILD
+        ? [
+            [
+              'expo-notifications',
+              {
+                icon: './assets/notification-icon.png',
+                color: '#020617',
+                sounds: []
+              }
+            ]
+            //"expo-apple-authentication"
+          ]
+        : [])
     ]
   }
 }

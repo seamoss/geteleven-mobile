@@ -33,6 +33,7 @@ import SettingsUsernameScreen from './screens/SettingsUsernameScreen'
 import DebugSettingsScreen from './screens/DebugSettingsScreen'
 import OnboardingWelcomeScreen from './screens/OnboardingWelcomeScreen'
 import OnboardingPermissionsScreen from './screens/OnboardingPermissionsScreen'
+import OnboardingPushPermissionsScreen from './screens/OnboardingPushPermissionsScreen'
 import OnboardingTourScreen from './screens/OnboardingTourScreen'
 import OnboardingProfileScreen from './screens/OnboardingProfileScreen'
 import OnboardingPhotoScreen from './screens/OnboardingPhotoScreen'
@@ -52,13 +53,13 @@ const linking = {
       Home: {
         path: 'home',
         parse: {
-          recordForUserId: (userId) => ({ recordForUserId: userId })
+          recordForUserId: userId => ({ recordForUserId: userId })
         }
       },
       ConnectionMessages: {
         path: 'profile/:connectionId',
         parse: {
-          connectionId: (connectionId) => connectionId,
+          connectionId: connectionId => connectionId,
           autoRecord: () => true
         }
       }
@@ -70,7 +71,7 @@ export default function App () {
   const navigationRef = useRef()
   const [isReady, setIsReady] = useState(false)
   const [initialUrl, setInitialUrl] = useState(null)
-  
+
   // Try to load Nexa fonts if they exist
   let customFonts = {
     Inter_300Light,
@@ -83,12 +84,12 @@ export default function App () {
     Poppins_600SemiBold,
     Poppins_700Bold
   }
-  
+
   // Load Nexa fonts
   customFonts['Nexa-ExtraLight'] = require('./assets/fonts/Nexa-ExtraLight.ttf')
   customFonts['Nexa-Regular'] = require('./assets/fonts/Nexa-Regular.ttf')
   customFonts['Nexa-Heavy'] = require('./assets/fonts/Nexa-Heavy.ttf')
-  
+
   const [fontsLoaded] = useFonts(customFonts)
 
   // Debug font loading
@@ -104,50 +105,30 @@ export default function App () {
   useEffect(() => {
     initializeAutoUpdates()
     initializeAudioMode()
-    
-    // Initialize push notifications
-    initializePushNotifications()
-    
+
+    // Setup push notification listeners (without requesting permissions)
+    PushNotificationService.setupNotificationListeners(navigationRef.current)
+
     // Get initial URL if app was opened from a deep link
-    Linking.getInitialURL().then((url) => {
+    Linking.getInitialURL().then(url => {
       if (url) {
         setInitialUrl(url)
       }
     })
-    
+
     // Listen for URL changes while app is open
     const subscription = Linking.addEventListener('url', handleDeepLink)
-    
+
     return () => {
       subscription.remove()
       PushNotificationService.removeNotificationListeners()
     }
   }, [])
-  
-  const initializePushNotifications = async () => {
-    try {
-      // Register for push notifications
-      const token = await PushNotificationService.registerForPushNotifications()
-      
-      if (token) {
-        // Check if user is authenticated to update token on server
-        const authToken = await AsyncStorage.getItem('authToken')
-        if (authToken) {
-          await PushNotificationService.updatePushTokenOnServer(authToken, token)
-        }
-      }
-      
-      // Setup notification listeners
-      PushNotificationService.setupNotificationListeners(navigationRef.current)
-    } catch (error) {
-      console.error('Error initializing push notifications:', error)
-    }
-  }
-  
-  const handleDeepLink = (event) => {
+
+  const handleDeepLink = event => {
     if (navigationRef.current && isReady) {
       const parsed = Linking.parse(event.url)
-      
+
       // Extract connectionId from the URL path
       if (parsed.path && parsed.path.includes('profile/')) {
         const connectionId = parsed.path.split('profile/')[1]
@@ -157,19 +138,19 @@ export default function App () {
       }
     }
   }
-  
-  const navigateToRecording = async (connectionId) => {
+
+  const navigateToRecording = async connectionId => {
     // Check if user is logged in
     const authToken = await AsyncStorage.getItem('authToken')
-    
+
     if (!authToken) {
       // Navigate to auth screen first (supports both new and existing users), then to recording
-      navigationRef.current?.navigate('Auth', { 
+      navigationRef.current?.navigate('Auth', {
         mode: 'signup',
         redirectTo: 'ConnectionMessages',
-        redirectParams: { 
-          connectionId: connectionId, 
-          autoRecord: true 
+        redirectParams: {
+          connectionId: connectionId,
+          autoRecord: true
         }
       })
     } else {
@@ -186,7 +167,7 @@ export default function App () {
   }
 
   return (
-    <NavigationContainer 
+    <NavigationContainer
       ref={navigationRef}
       linking={linking}
       onReady={() => {
@@ -212,8 +193,8 @@ export default function App () {
             return { animation }
           }}
         />
-        <Stack.Screen 
-          name='Auth' 
+        <Stack.Screen
+          name='Auth'
           component={AuthScreen}
           options={({ route }) => {
             const animation = route.params?.animation || 'slide_from_right'
@@ -227,6 +208,10 @@ export default function App () {
         <Stack.Screen
           name='OnboardingPermissions'
           component={OnboardingPermissionsScreen}
+        />
+        <Stack.Screen
+          name='OnboardingPushPermissions'
+          component={OnboardingPushPermissionsScreen}
         />
         <Stack.Screen name='OnboardingTour' component={OnboardingTourScreen} />
         <Stack.Screen
