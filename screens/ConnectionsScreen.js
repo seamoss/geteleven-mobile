@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -37,6 +37,9 @@ export default function ConnectionsScreen ({ navigation, route }) {
   const [refreshing, setRefreshing] = useState(false)
   const [tourVisible, setTourVisible] = useState(false)
 
+  // DEBUG FLAG: Set to true to test empty state, false for normal behavior
+  const DEBUG_EMPTY_STATE = false
+
   // Get route params to check if we should auto-open modals
   const { autoOpenModal, showTour } = route?.params || {}
 
@@ -73,15 +76,11 @@ export default function ConnectionsScreen ({ navigation, route }) {
   const groupConnections = connections => {
     const recent = []
     const older = []
-    const now = new Date()
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-    connections.forEach((connection, index) => {
+    connections.forEach(connection => {
       const isRecent = isRecentConnection(connection)
-      const lastMessageDate = connection.last_message_at
-        ? new Date(connection.last_message_at)
-        : null
 
       if (isRecent) {
         recent.push(connection)
@@ -146,7 +145,7 @@ export default function ConnectionsScreen ({ navigation, route }) {
     }
 
     fetchData(false)
-    
+
     // Check and refresh push token for existing users
     if (authToken) {
       PushNotificationService.checkAndRefreshToken(authToken)
@@ -206,10 +205,11 @@ export default function ConnectionsScreen ({ navigation, route }) {
   }
 
   const handleInvitePress = () => {
-    // If user is not a manager, show upgrade modal instead
-    if (meData && !meData.manager) {
+    // For non-pro users, only show upgrade modal if they have 2+ connections
+    if (meData && !meData.manager && connectionData && connectionData.length >= 2) {
       setUpgradeVisible(true)
     } else {
+      // Pro users or non-pro with less than 2 connections can invite
       setInviteVisible(true)
     }
   }
@@ -255,6 +255,8 @@ export default function ConnectionsScreen ({ navigation, route }) {
 
   // Check if there are any new messages across all connections
   const hasNewMessages = connectionData.some(conn => conn.new_messages > 0)
+  const isEmptyState =
+    !connectionData || connectionData.length === 0 || DEBUG_EMPTY_STATE
 
   return (
     <SafeAreaView style={styles.container}>
@@ -270,10 +272,16 @@ export default function ConnectionsScreen ({ navigation, route }) {
               Connections
               {/* ({connectionData.length.toLocaleString('en-US')}) */}
             </Text>
-            {hasNewMessages && (
+            {isEmptyState ? (
               <Text style={styles.headerSubtitle}>
-                Hey! It looks like there's new messages!
+                It's looking a little empty in here.
               </Text>
+            ) : (
+              hasNewMessages && (
+                <Text style={styles.headerSubtitle}>
+                  Hey! It looks like there's new messages!
+                </Text>
+              )
             )}
           </View>
           <View style={styles.floatingIconTop}>
@@ -297,15 +305,20 @@ export default function ConnectionsScreen ({ navigation, route }) {
           }
         >
           <View style={styles.connectionsContainer}>
-            {connectionData && connectionData.length > 0 ? (
+            {connectionData &&
+            connectionData.length > 0 &&
+            !DEBUG_EMPTY_STATE ? (
               (() => {
                 const { recent, older } = groupConnections(connectionData)
+                const allConnections = [...recent, ...older]
+                const isNonPro = meData && !meData.manager
 
-                const renderConnection = (
-                  connection,
-                  index,
-                  isRecent = true
-                ) => {
+                // For non-pro users, limit to 2 connections
+                const visibleConnections = isNonPro
+                  ? allConnections.slice(0, 2)
+                  : allConnections
+
+                const renderConnection = (connection, _, isRecent = true) => {
                   const avatarUrl = connection.avatar_url
                     ? replaceDomain(
                         connection.avatar_url,
@@ -340,6 +353,77 @@ export default function ConnectionsScreen ({ navigation, route }) {
                   )
                 }
 
+                const renderUpgradeTile = () => {
+                  const avatarWidth = scale(isSmallDevice ? 180 : 187)
+                  const avatarHeight = scale(isSmallDevice ? 190 : 220)
+
+                  return (
+                    <TouchableOpacity
+                      style={styles.connectionItem}
+                      onPress={() => setUpgradeVisible(true)}
+                    >
+                      <View
+                        style={[
+                          styles.upgradeTile,
+                          { width: avatarWidth, height: avatarHeight }
+                        ]}
+                      >
+                        <View style={styles.inviteChip}>
+                          <Text style={styles.inviteChipText}>INVITE</Text>
+                        </View>
+                        <View style={styles.plusCircle}>
+                          <Plus
+                            size={32}
+                            color={Colors.foreground}
+                            strokeWidth={2}
+                          />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )
+                }
+
+                // For non-pro users with connections
+                if (isNonPro && visibleConnections.length > 0) {
+                  return (
+                    <>
+                      <View style={styles.connectionsGrid}>
+                        {visibleConnections.map((connection, index) =>
+                          renderConnection(connection, index, true)
+                        )}
+                        {/* Only show upgrade tile if they have less than 2 connections */}
+                        {visibleConnections.length < 2 && renderUpgradeTile()}
+                      </View>
+
+                      {/* Bottom upgrade callout */}
+                      <View style={styles.upgradeCallout}>
+                        <View style={styles.upgradeCalloutContent}>
+                          <View style={styles.upgradeCalloutLeft}>
+                            <View style={styles.proBadge}>
+                              <Text style={styles.proBadgeText}>Pro</Text>
+                            </View>
+                            <Text style={styles.upgradeHeader}>
+                              Need more connections?
+                            </Text>
+                            <Text style={styles.upgradeText}>
+                              Get unlimited invites and more when you upgrade.
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.upgradeButton}
+                            onPress={() => setUpgradeVisible(true)}
+                          >
+                            <Text style={styles.upgradeButtonText}>
+                              Upgrade
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </>
+                  )
+                }
+
+                // For pro users, render normally
                 return (
                   <>
                     {/* Recent Connections */}
@@ -370,48 +454,46 @@ export default function ConnectionsScreen ({ navigation, route }) {
                         )}
                       </View>
                     )}
-                    {/* Upgrade Callout - Only show if not a manager */}
-                    {meData && !meData.manager && (
-                      <View style={styles.upgradeCallout}>
-                        <View style={styles.upgradeCalloutContent}>
-                          <View style={styles.upgradeCalloutLeft}>
-                            <View style={styles.proBadge}>
-                              <Text style={styles.proBadgeText}>Pro</Text>
-                            </View>
-                            <Text style={styles.upgradeHeader}>
-                              Need more connections?
-                            </Text>
-                            <Text style={styles.upgradeText}>
-                              Get unlimited invites and more when you upgrade.
-                            </Text>
-                          </View>
-                          <TouchableOpacity
-                            style={styles.upgradeButton}
-                            onPress={() => setUpgradeVisible(true)}
-                          >
-                            <Text style={styles.upgradeButtonText}>
-                              Upgrade
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    )}
                   </>
                 )
               })()
             ) : (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No connections yet</Text>
-                <TouchableOpacity
-                  style={styles.inviteButton}
-                  onPress={handleInvitePress}
-                >
-                  <Text style={styles.inviteButtonText}>
-                    {meData && !meData.manager
-                      ? 'Upgrade to invite'
-                      : 'Invite someone'}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.connectionsGrid}>
+                  {/* Show two invite tiles for empty state */}
+                  {[1, 2].map(index => {
+                    const avatarWidth = scale(isSmallDevice ? 180 : 187)
+                    const avatarHeight = scale(isSmallDevice ? 190 : 220)
+
+                    return (
+                      <TouchableOpacity
+                        key={`invite-tile-${index}`}
+                        style={styles.connectionItem}
+                        onPress={handleInvitePress}
+                      >
+                        <View
+                          style={[
+                            styles.upgradeTile,
+                            { width: avatarWidth, height: avatarHeight }
+                          ]}
+                        >
+                          <View style={styles.inviteChip}>
+                            <Text style={styles.inviteChipText}>INVITE</Text>
+                          </View>
+                          <View style={styles.plusCircle}>
+                            <Plus
+                              size={32}
+                              color={Colors.foreground}
+                              strokeWidth={2}
+                            />
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+
+                {/* Don't show upgrade callout in empty state - the invite tiles are enough */}
               </View>
             )}
           </View>
@@ -545,25 +627,7 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    paddingTop: 100
-  },
-  emptyStateText: {
-    ...TextStyles.body,
-    color: Colors.placeholder,
-    marginBottom: 20
-  },
-  inviteButton: {
-    backgroundColor: Colors.copy,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8
-  },
-  inviteButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500'
+    paddingTop: getResponsiveSpacing.elementSpacing
   },
   bottomBar: {
     position: 'absolute',
@@ -660,5 +724,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center'
+  },
+  upgradeTile: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative'
+  },
+  inviteChip: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    backgroundColor: Colors.foreground,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20
+  },
+  inviteChipText: {
+    color: Colors.background,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5
+  },
+  plusCircle: {
+    marginTop: 100,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   }
 })
