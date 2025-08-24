@@ -157,7 +157,7 @@ export default function AuthScreen ({ navigation, route }) {
 
       // Get stored push token (don't request permission here)
       const expoPushToken = await PushNotificationService.getStoredToken()
-      
+
       console.log('Verifying OTP:', {
         countryCode,
         phone: cleanPhone,
@@ -172,7 +172,7 @@ export default function AuthScreen ({ navigation, route }) {
         countryCode,
         phone: cleanPhone,
         otp,
-        createManager: isSignup, // Create account for signup, signin for existing users
+        createManager: false, // Create account for signup, signin for existing users
         expoPushToken, // Include push token in verification
         platform: Platform.OS // Include platform information
       })
@@ -189,10 +189,13 @@ export default function AuthScreen ({ navigation, route }) {
 
         // Store auth token
         await AsyncStorage.setItem('authToken', result.data.authToken)
-        
+
         // Update push token on server if we have one
         if (expoPushToken) {
-          await PushNotificationService.updatePushTokenOnServer(result.data.authToken, expoPushToken)
+          await PushNotificationService.updatePushTokenOnServer(
+            result.data.authToken,
+            expoPushToken
+          )
         }
 
         if (isSignup) {
