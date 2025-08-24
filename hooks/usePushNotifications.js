@@ -27,6 +27,9 @@ export default function usePushNotifications() {
       }),
     });
 
+    // DISABLED: Auto-requesting push permissions disabled for this release
+    // Only available through debug settings
+    /*
     registerForPushNotificationsAsync().then(token => {
       if (token) {
         setExpoPushToken(token);
@@ -34,6 +37,8 @@ export default function usePushNotifications() {
         console.log('Push token:', token);
       }
     });
+    */
+    console.log('Push notification auto-request disabled - use Debug Settings to enable');
 
     // This listener is fired whenever a notification is received while the app is foregrounded
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {

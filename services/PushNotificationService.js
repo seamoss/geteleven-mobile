@@ -107,20 +107,22 @@ class PushNotificationService {
 
   async checkAndRefreshToken(authToken) {
     try {
+      // DISABLED: Auto-requesting push permissions disabled for this release
+      // Only get stored token without requesting new permissions
       const storedToken = await AsyncStorage.getItem('expoPushToken')
-      const currentToken = await this.registerForPushNotifications()
-
-      if (!currentToken) {
-        console.log('Could not get push token')
+      
+      if (!storedToken) {
+        console.log('No stored push token found (auto-request disabled)')
         return null
       }
 
-      if (storedToken !== currentToken || !storedToken) {
-        console.log('Push token changed or new token obtained, updating server...')
-        await this.updatePushTokenOnServer(authToken, currentToken)
+      // Only update server if we have a stored token
+      if (authToken && storedToken) {
+        console.log('Using existing push token, updating server if needed...')
+        await this.updatePushTokenOnServer(authToken, storedToken)
       }
 
-      return currentToken
+      return storedToken
     } catch (error) {
       console.error('Error checking/refreshing push token:', error)
       return null
