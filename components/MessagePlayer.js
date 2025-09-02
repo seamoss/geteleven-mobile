@@ -9,6 +9,7 @@ import {
   cleanupAudio,
   isValidAudioUrl
 } from '../utils/audioUtils'
+import audioRoutingManager from '../utils/audioRoutingManager'
 import { api } from '../lib/api'
 
 // Format time helper function
@@ -147,6 +148,9 @@ const MessagePlayer = ({
 
   const handlePlay = async () => {
     try {
+      // Configure audio routing before playback
+      await audioRoutingManager.configureForPlayback()
+      
       let currentSound = sound
 
       // If sound is null (after completion), reload the audio first

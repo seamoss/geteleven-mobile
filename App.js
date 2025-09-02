@@ -3,11 +3,13 @@ import { StatusBar } from 'expo-status-bar'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import * as Linking from 'expo-linking'
-import { initializeAudioMode } from './utils/audioUtils'
+import audioRoutingManager from './utils/audioRoutingManager'
 import { initializeAutoUpdates } from './utils/updateUtils'
 import { useFonts } from 'expo-font'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import PushNotificationService from './services/PushNotificationService'
+import AuthService from './services/AuthService'
+import RevenueCatService from './services/RevenueCatService'
 import {
   Inter_300Light,
   Inter_400Regular,
@@ -104,7 +106,13 @@ export default function App () {
   // Initialize audio mode and auto-updates for production builds
   useEffect(() => {
     initializeAutoUpdates()
-    initializeAudioMode()
+    audioRoutingManager.initialize()
+    
+    // Initialize RevenueCat early in app lifecycle
+    initializeRevenueCat()
+    
+    // Validate auth token on app start
+    validateAuthOnStartup()
 
     // Setup push notification listeners (without requesting permissions)
     PushNotificationService.setupNotificationListeners(navigationRef.current)
@@ -124,6 +132,45 @@ export default function App () {
       PushNotificationService.removeNotificationListeners()
     }
   }, [])
+
+  const initializeRevenueCat = async () => {
+    try {
+      console.log('🔄 [App] Initializing RevenueCat on app startup...')
+      const result = await RevenueCatService.initialize()
+      
+      if (result) {
+        console.log('✅ [App] RevenueCat initialized successfully')
+        
+        // Load offerings to trigger product ID loading
+        console.log('🔄 [App] Loading offerings to verify product setup...')
+        const offerings = await RevenueCatService.getOfferings()
+        
+        if (offerings && offerings.current && offerings.current.availablePackages.length > 0) {
+          console.log(`✅ [App] Loaded ${offerings.current.availablePackages.length} product packages successfully`)
+        } else {
+          console.warn('⚠️ [App] RevenueCat initialized but no product packages found')
+        }
+      } else {
+        console.warn('⚠️ [App] RevenueCat initialization failed')
+      }
+    } catch (error) {
+      console.error('❌ [App] Error initializing RevenueCat:', error)
+    }
+  }
+
+  const validateAuthOnStartup = async () => {
+    try {
+      console.log('Validating authentication on startup...')
+      const authStatus = await AuthService.checkAuthStatus()
+      
+      if (authStatus.wasInvalidated) {
+        console.log('Auth token was invalid and has been cleared')
+        // The user will be redirected to login automatically by HomeScreen
+      }
+    } catch (error) {
+      console.error('Error validating auth on startup:', error)
+    }
+  }
 
   const handleDeepLink = event => {
     if (navigationRef.current && isReady) {

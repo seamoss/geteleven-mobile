@@ -15,6 +15,7 @@ import { X, Square, RotateCcw, Send, Play, Pause } from 'lucide-react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { TextStyles, Colors } from '../styles/fonts'
 import ElevenAvatar from './ElevenAvatar'
+import audioRoutingManager from '../utils/audioRoutingManager'
 import { formatConnectionName } from '../lib/util'
 import AudioBubbleSvg from '../assets/images/svg/audio-bubble.svg'
 import { getResponsiveSpacing } from '../utils/responsive'
@@ -353,6 +354,9 @@ export default function VoiceRecordingModal ({
     playbackRef.current = true // Prevent concurrent playback operations
 
     try {
+      // Configure audio routing before playback
+      await audioRoutingManager.configureForPlayback()
+      
       if (isPlaying) {
         // Pause playback
         if (playbackSound) {
