@@ -56,7 +56,12 @@ const SettingsRow = ({
 export default function SettingsScreen () {
   const { navigate, loading, setLoading } = useTransition()
   const [meData, setMeData] = useState({
-    manager: false
+    manager: false,
+    avatar_url: null,
+    first_name: '',
+    last_name: '',
+    username: null,
+    has_active_subscription: false
   })
 
   const { isAuthenticated, authToken, checkingAuth } = authCheck()
@@ -249,15 +254,15 @@ export default function SettingsScreen () {
           {/* User Avatar Section */}
           <View style={styles.avatarSection}>
             <ElevenAvatar
-              src={replaceDomain(
+              src={meData.avatar_url ? replaceDomain(
                 meData.avatar_url,
                 'ik.imagekit.io/geteleven/tr:h-300'
-              )}
+              ) : null}
               size={100}
               borderColor='#f1f5f9'
               borderWidth={2}
               showNameLabel={true}
-              name={formatAvatarName(meData.first_name, meData.last_name)}
+              name={formatAvatarName(meData.first_name || '', meData.last_name || '')}
               borderRadius={15}
             />
 
