@@ -24,13 +24,26 @@ import {
   Bell,
   Copy,
   RefreshCw,
-  Send
+  Send,
+  DollarSign,
+  LogOut,
+  ShieldAlert,
+  Trash2,
+  Activity,
+  Globe,
+  ShoppingCart,
+  Zap
 } from 'lucide-react-native'
 import { Colors } from '../styles/fonts'
 import useTransition from '../hooks/transition'
 import { authCheck } from '../lib/auth'
 import { api } from '../lib/api'
 import PushNotificationService from '../services/PushNotificationService'
+import debugRevenueCat from '../utils/revenueCatDebugger'
+import AuthService from '../services/AuthService'
+import APIHealthCheck from '../utils/apiHealthCheck'
+import RevenueCatService from '../services/RevenueCatService'
+import { API_BASE_URL } from '../lib/config'
 
 const DebugRow = ({
   Icon,
@@ -76,7 +89,7 @@ export default function DebugSettingsScreen () {
   const { authToken } = authCheck()
   const [loading, setLoading] = useState(false)
   const [permissionStatus, setPermissionStatus] = useState('unknown')
-  
+
   // Push notification state
   const [pushToken, setPushToken] = useState(null)
   const [tokenInfo, setTokenInfo] = useState(null)
@@ -110,14 +123,16 @@ export default function DebugSettingsScreen () {
 
     try {
       const { status } = await Audio.requestPermissionsAsync()
-      
+
       let message
       switch (status) {
         case 'granted':
-          message = 'Microphone permission granted! You can now use voice features.'
+          message =
+            'Microphone permission granted! You can now use voice features.'
           break
         case 'denied':
-          message = 'Microphone permission denied. Some features may not work properly.'
+          message =
+            'Microphone permission denied. Some features may not work properly.'
           break
         default:
           message = 'Unable to determine microphone permission status.'
@@ -197,6 +212,68 @@ export default function DebugSettingsScreen () {
     )
   }
 
+  const forceLogout = async () => {
+    Alert.alert(
+      'Force Logout',
+      'This will clear your authentication and force you to sign in again. This is useful if you are stuck in an authentication loop.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Force Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await AuthService.forceLogout()
+
+              if (result.success) {
+                Alert.alert(
+                  'Logged Out',
+                  'You have been forcefully logged out. The app will now restart.',
+                  [
+                    {
+                      text: 'OK',
+                      onPress: () => {
+                        // Navigate to auth screen
+                        navigate('Auth', { mode: 'signin' })
+                      }
+                    }
+                  ]
+                )
+              } else {
+                Alert.alert(
+                  'Error',
+                  'Failed to force logout. Try clearing all app data.'
+                )
+              }
+            } catch (error) {
+              console.error('Error forcing logout:', error)
+              Alert.alert('Error', 'Failed to force logout')
+            }
+          }
+        }
+      ]
+    )
+  }
+
+  const validateAuthToken = async () => {
+    try {
+      setLoading(true)
+      const isValid = await AuthService.validateToken(authToken)
+
+      Alert.alert(
+        'Auth Token Status',
+        isValid
+          ? 'Your auth token is valid and working properly.'
+          : 'Your auth token is invalid or expired. You should force logout.',
+        [{ text: 'OK' }]
+      )
+    } catch (error) {
+      Alert.alert('Error', 'Failed to validate auth token')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const openDeviceSettings = () => {
     Linking.openSettings().catch(() => {
       Alert.alert('Error', 'Unable to open device settings')
@@ -243,7 +320,7 @@ export default function DebugSettingsScreen () {
 
   const fetchTokenInfo = async () => {
     if (!authToken) return
-    
+
     setPushLoading(true)
     try {
       const response = await api('GET', '/users/me', {}, authToken)
@@ -267,16 +344,20 @@ export default function DebugSettingsScreen () {
   const handleRefreshToken = async () => {
     setRefreshing(true)
     try {
-      const newToken = await PushNotificationService.registerForPushNotifications()
-      
+      const newToken =
+        await PushNotificationService.registerForPushNotifications()
+
       if (newToken) {
         setPushToken(newToken)
-        
+
         if (authToken) {
-          await PushNotificationService.updatePushTokenOnServer(authToken, newToken)
+          await PushNotificationService.updatePushTokenOnServer(
+            authToken,
+            newToken
+          )
           await fetchTokenInfo()
         }
-        
+
         Alert.alert('Success', 'Push token refreshed successfully')
       } else {
         Alert.alert('Error', 'Failed to refresh push token')
@@ -315,7 +396,10 @@ export default function DebugSettingsScreen () {
         throw new Error(response.error)
       }
 
-      Alert.alert('Success', 'Test notification sent! You should receive it shortly.')
+      Alert.alert(
+        'Success',
+        'Test notification sent! You should receive it shortly.'
+      )
     } catch (error) {
       console.error('Error sending test notification:', error)
       Alert.alert('Error', `Failed to send test notification: ${error.message}`)
@@ -335,16 +419,244 @@ export default function DebugSettingsScreen () {
       Alert.alert('Success', 'Push notifications enabled')
     } else {
       Alert.alert(
-        'Push Notifications Not Available', 
+        'Push Notifications Not Available',
         'Push notifications require an EAS development build or production build. They are not supported in Expo Go or basic dev builds.\n\nTo test:\n• Build with: eas build --profile development\n• Or run: npx expo run:ios'
       )
     }
   }
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     if (!dateString) return 'Never'
     const date = new Date(dateString)
     return date.toLocaleString()
+  }
+
+  const runAPIHealthCheck = async () => {
+    Alert.alert(
+      'Run API Health Check',
+      'This will test API connectivity and diagnose any issues. Check console for detailed output.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Run Check',
+          onPress: async () => {
+            try {
+              setLoading(true)
+              Alert.alert(
+                'Running...',
+                `Testing API at:\n${API_BASE_URL}\n\nCheck console for details`
+              )
+
+              // Run the health check
+              const results = await APIHealthCheck.runHealthCheck(authToken)
+
+              // Count issues
+              const errors = results.filter(r => r.status === 'error').length
+              const warnings = results.filter(
+                r => r.status === 'warning'
+              ).length
+
+              // Show summary
+              setTimeout(() => {
+                let title = 'API Healthy'
+                let message =
+                  'API is functioning properly. Check console for details.'
+
+                if (errors > 0) {
+                  title = 'API Issues Found'
+                  message = `Found ${errors} errors and ${warnings} warnings. Check console for details.`
+                } else if (warnings > 0) {
+                  title = 'API Has Warnings'
+                  message = `Found ${warnings} warnings. API is partially working. Check console for details.`
+                }
+
+                Alert.alert(title, message, [{ text: 'OK' }])
+              }, 2000)
+            } catch (error) {
+              console.error('Error running API health check:', error)
+              Alert.alert('Error', 'Failed to run API health check')
+            } finally {
+              setLoading(false)
+            }
+          }
+        }
+      ]
+    )
+  }
+
+  const testAppStoreConnect = async () => {
+    Alert.alert(
+      'Test App Store Connect',
+      'This will test direct communication with App Store Connect to see if products are available.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Test Products',
+          onPress: async () => {
+            try {
+              setLoading(true)
+              Alert.alert(
+                'Testing...',
+                'Checking App Store Connect directly...'
+              )
+
+              console.log('Direct App Store Connect Test')
+              console.log('=====================================')
+
+              // Import Purchases directly
+              const Purchases = require('react-native-purchases').default
+
+              // Test product IDs from feature flags
+              const { getFeatureConfig } = require('../lib/featureFlags')
+              const productIds = [
+                getFeatureConfig('REVENUECAT_MONTHLY_PRODUCT_ID'),
+                getFeatureConfig('REVENUECAT_YEARLY_PRODUCT_ID')
+              ].filter(Boolean)
+
+              console.log(`Testing product IDs: [${productIds.join(', ')}]`)
+
+              // Direct call to App Store Connect
+              const products = await Purchases.getProducts(productIds)
+
+              console.log(
+                `App Store Connect returned ${products.length} products`
+              )
+
+              if (products.length === 0) {
+                console.error('No products returned from App Store Connect')
+                console.log(
+                  'This confirms the issue is with App Store Connect configuration'
+                )
+                Alert.alert(
+                  'App Store Connect Issue',
+                  'No products returned from App Store Connect. The issue is definitely with App Store Connect or product configuration, not RevenueCat.',
+                  [{ text: 'OK' }]
+                )
+              } else {
+                console.log('Products found in App Store Connect:')
+                products.forEach((product, i) => {
+                  console.log(
+                    `${i + 1}. ${product.identifier} - ${product.priceString}`
+                  )
+                })
+                Alert.alert(
+                  'App Store Connect OK',
+                  `Found ${products.length} products in App Store Connect. The issue might be with RevenueCat configuration.`,
+                  [{ text: 'OK' }]
+                )
+              }
+            } catch (error) {
+              console.error('Error testing App Store Connect:', error)
+              Alert.alert(
+                'Error',
+                `App Store Connect test failed: ${error.message}`
+              )
+            } finally {
+              setLoading(false)
+            }
+          }
+        }
+      ]
+    )
+  }
+
+  const forceInitializeRevenueCat = async () => {
+    Alert.alert(
+      'Force Initialize RevenueCat',
+      'This will force RevenueCat to re-initialize and load products. Check console for product ID logs.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Initialize',
+          onPress: async () => {
+            try {
+              setLoading(true)
+              Alert.alert(
+                'Initializing...',
+                'Check console for product ID loading logs'
+              )
+
+              console.log('[Debug] Force initializing RevenueCat...')
+
+              // Force re-initialization
+              RevenueCatService.isInitialized = false
+              const result = await RevenueCatService.initialize()
+
+              console.log('[Debug] Initialization result:', result)
+
+              if (result) {
+                console.log('[Debug] Loading offerings to see product IDs...')
+                const offerings = await RevenueCatService.getOfferings()
+
+                if (offerings) {
+                  console.log('[Debug] Offerings loaded successfully')
+                } else {
+                  console.error('[Debug] Failed to load offerings')
+                }
+
+                Alert.alert(
+                  'Initialization Complete',
+                  'RevenueCat re-initialized. Check console for product ID logs and offerings details.',
+                  [{ text: 'OK' }]
+                )
+              } else {
+                Alert.alert(
+                  'Initialization Failed',
+                  'RevenueCat initialization failed. Check console for errors.'
+                )
+              }
+            } catch (error) {
+              console.error(
+                '[Debug] Error force initializing RevenueCat:',
+                error
+              )
+              Alert.alert('Error', `Initialization failed: ${error.message}`)
+            } finally {
+              setLoading(false)
+            }
+          }
+        }
+      ]
+    )
+  }
+
+  const runRevenueCatDebug = async () => {
+    Alert.alert(
+      'Run RevenueCat Debugger',
+      'This will run a comprehensive diagnostic check. Check the console logs for detailed output.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Run Debug',
+          onPress: async () => {
+            try {
+              setLoading(true)
+              Alert.alert(
+                'Running...',
+                'Check console for detailed debug output'
+              )
+
+              // Run the enhanced debugger
+              await debugRevenueCat()
+
+              // Alert when complete
+              setTimeout(() => {
+                Alert.alert(
+                  'Debug Complete',
+                  'Enhanced RevenueCat debug completed. Check console for:\n\n• Feature flag config\n• App Store Connect test\n• Individual product loading\n• RevenueCat offerings\n• Detailed error analysis',
+                  [{ text: 'OK' }]
+                )
+              }, 3000)
+            } catch (error) {
+              console.error('Error running RevenueCat debug:', error)
+              Alert.alert('Error', 'Failed to run RevenueCat debugger')
+            } finally {
+              setLoading(false)
+            }
+          }
+        }
+      ]
+    )
   }
 
   return (
@@ -369,6 +681,63 @@ export default function DebugSettingsScreen () {
           <Text style={styles.warningText}>
             This screen is for development and testing purposes only.
           </Text>
+        </View>
+
+        {/* API Health Check Section */}
+        <View style={styles.debugGroup}>
+          <Text style={styles.sectionTitle}>API Diagnostics</Text>
+
+          <DebugRow
+            Icon={Activity}
+            label='Run API Health Check'
+            tip='Test API connectivity and diagnose 404 errors.'
+            onPress={runAPIHealthCheck}
+            disabled={loading}
+          />
+
+          <DebugRow
+            Icon={Globe}
+            label='View API Configuration'
+            tip={`Current: ${API_BASE_URL}`}
+            onPress={() => {
+              Alert.alert(
+                'API Configuration',
+                `Base URL: ${API_BASE_URL}\n\nEnvironment: ${
+                  __DEV__ ? 'Development' : 'Production'
+                }\n\nIf you're seeing 404s, check:\n1. Is your local API running?\n2. Is the URL correct?\n3. Are you on the right network?`,
+                [{ text: 'OK' }]
+              )
+            }}
+          />
+        </View>
+
+        {/* Authentication Debug Section */}
+        <View style={styles.debugGroup}>
+          <Text style={styles.sectionTitle}>Authentication Debug</Text>
+
+          <DebugRow
+            Icon={ShieldAlert}
+            label='Validate Auth Token'
+            tip='Check if your current auth token is valid.'
+            onPress={validateAuthToken}
+            disabled={loading || !authToken}
+          />
+
+          <DebugRow
+            Icon={LogOut}
+            label='Force Logout'
+            tip='Clear auth and force sign in. Use if stuck in auth loop.'
+            onPress={forceLogout}
+            color='#f59e0b'
+          />
+
+          <DebugRow
+            Icon={Trash2}
+            label='Clear All App Data'
+            tip='Nuclear option - clears everything and resets the app.'
+            onPress={clearAllAppData}
+            color='#ef4444'
+          />
         </View>
 
         {/* Debug Options */}
@@ -416,19 +785,42 @@ export default function DebugSettingsScreen () {
             tip='Clear onboarding progress to test welcome screens.'
             onPress={resetOnboardingState}
           />
+        </View>
+
+        {/* RevenueCat / In-App Purchases Section */}
+        <View style={styles.debugGroup}>
+          <Text style={styles.sectionTitle}>RevenueCat / In-App Purchases</Text>
 
           <DebugRow
-            Icon={RotateCcw}
-            label='Clear All App Data'
-            tip='Clear all stored data including auth tokens.'
-            onPress={clearAllAppData}
+            Icon={Zap}
+            label='Force Initialize RevenueCat'
+            tip='Force re-initialize RevenueCat and show product ID loading logs.'
+            onPress={forceInitializeRevenueCat}
+            disabled={loading}
+            color='#f59e0b'
+          />
+
+          <DebugRow
+            Icon={ShoppingCart}
+            label='Test App Store Connect'
+            tip='Test direct connection to App Store Connect products.'
+            onPress={testAppStoreConnect}
+            disabled={loading}
+          />
+
+          <DebugRow
+            Icon={DollarSign}
+            label='Run Full RevenueCat Debug'
+            tip='Comprehensive RevenueCat diagnostics with verbose logging.'
+            onPress={runRevenueCatDebug}
+            disabled={loading}
           />
         </View>
 
         {/* Push Notifications Section */}
         <View style={styles.debugGroup}>
           <Text style={styles.sectionTitle}>Push Notifications</Text>
-          
+
           {/* Current Token Display */}
           <View style={styles.tokenSection}>
             <Text style={styles.tokenLabel}>Current Push Token</Text>
@@ -455,13 +847,18 @@ export default function DebugSettingsScreen () {
           <View style={styles.tokenSection}>
             <Text style={styles.tokenLabel}>Server-Side Tokens</Text>
             {pushLoading ? (
-              <ActivityIndicator size="small" color={Colors.copy} style={styles.loader} />
+              <ActivityIndicator
+                size='small'
+                color={Colors.copy}
+                style={styles.loader}
+              />
             ) : tokenInfo && tokenInfo.length > 0 ? (
               <View style={styles.serverTokensContainer}>
                 {tokenInfo.map((token, index) => (
                   <View key={token.id} style={styles.tokenInfoCard}>
                     <Text style={styles.tokenInfoText}>
-                      #{index + 1} • {token.platform || 'Unknown'} • {token.is_active ? '✅' : '❌'}
+                      #{index + 1} - {token.platform || 'Unknown'} •{' '}
+                      {token.is_active ? '✅' : '❌'}
                     </Text>
                     <Text style={styles.tokenInfoSubtext}>
                       Created: {formatDate(token.created_at)}
@@ -469,11 +866,14 @@ export default function DebugSettingsScreen () {
                   </View>
                 ))}
                 <Text style={styles.tokenSummary}>
-                  Total: {tokenInfo.length} • Active: {tokenInfo.filter(t => t.is_active).length}
+                  Total: {tokenInfo.length} - Active:{' '}
+                  {tokenInfo.filter(t => t.is_active).length}
                 </Text>
               </View>
             ) : (
-              <Text style={styles.noTokenText}>No tokens registered on server</Text>
+              <Text style={styles.noTokenText}>
+                No tokens registered on server
+              </Text>
             )}
           </View>
 
