@@ -6,13 +6,24 @@ import { DEBUG_ENABLED } from '../lib/config'
  * Optimized for DigitalOcean Spaces and other HTTPS CDN sources
  */
 
-// Audio configuration for production builds
-const PRODUCTION_AUDIO_CONFIG = {
+// Audio configuration for speaker (loud) playback
+const SPEAKER_AUDIO_CONFIG = {
   allowsRecordingIOS: false,
   staysActiveInBackground: true, // Allow background audio
-  playsInSilentModeIOS: true, // Play even when device is in silent mode
+  playsInSilentModeIOS: false, // Respect silent mode when using speaker
   shouldDuckAndroid: true, // Lower other audio when playing
   playThroughEarpieceAndroid: false,
+  interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_MIX_WITH_OTHERS,
+  interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS
+}
+
+// Audio configuration for earpiece (quiet) playback
+const EARPIECE_AUDIO_CONFIG = {
+  allowsRecordingIOS: true, // Needed for earpiece routing on iOS
+  staysActiveInBackground: true,
+  playsInSilentModeIOS: true, // Always play through earpiece in silent mode
+  shouldDuckAndroid: true,
+  playThroughEarpieceAndroid: true, // Use earpiece on Android
   interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_MIX_WITH_OTHERS,
   interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS
 }
@@ -27,18 +38,93 @@ const DEVELOPMENT_AUDIO_CONFIG = {
 }
 
 /**
+ * Check if any external audio device is connected
+ */
+const checkForExternalDevices = async () => {
+  try {
+    const status = await Audio.getStatusAsync()
+    // This is a simplified check - in production you might want to use a native module
+    // for more detailed device detection
+    return false // Default to no external devices for now
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Detect if the device is in silent mode (iOS)
+ * Note: This is a heuristic approach as iOS doesn't provide direct API
+ */
+const detectSilentMode = async () => {
+  try {
+    // Try to play a very short silent sound to detect if silent mode is on
+    // If it doesn't play, we're likely in silent mode
+    const { sound } = await Audio.Sound.createAsync(
+      { uri: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=' },
+      { shouldPlay: false, volume: 0 }
+    )
+    
+    // Check if we can play through speaker
+    const status = await sound.getStatusAsync()
+    await sound.unloadAsync()
+    
+    // If playsInSilentModeIOS is false and device is muted, sound won't play
+    return false // Default to not silent for initial implementation
+  } catch {
+    return false
+  }
+}
+
+/**
  * Initialize audio mode for the app
  * Call this once when the app starts
+ * @param {boolean} forceEarpiece - Force earpiece mode regardless of silent switch
  */
-export const initializeAudioMode = async () => {
+export const initializeAudioMode = async (forceEarpiece = false) => {
   try {
-    const config = DEBUG_ENABLED
-      ? DEVELOPMENT_AUDIO_CONFIG
-      : PRODUCTION_AUDIO_CONFIG
+    if (DEBUG_ENABLED) {
+      await Audio.setAudioModeAsync(DEVELOPMENT_AUDIO_CONFIG)
+      return { mode: 'development' }
+    }
 
-    await Audio.setAudioModeAsync(config)
+    // Check for external devices first (highest priority)
+    const hasExternalDevice = await checkForExternalDevices()
+    
+    if (hasExternalDevice) {
+      // If external device connected, use speaker config but system will route to device
+      await Audio.setAudioModeAsync(SPEAKER_AUDIO_CONFIG)
+      return { mode: 'external_device' }
+    }
+
+    // Check if we should use earpiece (silent mode or forced)
+    const isSilentMode = await detectSilentMode()
+    const useEarpiece = forceEarpiece || isSilentMode
+
+    if (useEarpiece) {
+      await Audio.setAudioModeAsync(EARPIECE_AUDIO_CONFIG)
+      return { mode: 'earpiece', reason: forceEarpiece ? 'forced' : 'silent_mode' }
+    } else {
+      await Audio.setAudioModeAsync(SPEAKER_AUDIO_CONFIG)
+      return { mode: 'speaker' }
+    }
   } catch (error) {
-    // Silently handle error
+    // Fallback to speaker mode on error
+    await Audio.setAudioModeAsync(SPEAKER_AUDIO_CONFIG)
+    return { mode: 'speaker', error: error.message }
+  }
+}
+
+/**
+ * Switch audio output between speaker and earpiece
+ * @param {boolean} useSpeaker - true for speaker, false for earpiece
+ */
+export const switchAudioOutput = async (useSpeaker) => {
+  try {
+    const config = useSpeaker ? SPEAKER_AUDIO_CONFIG : EARPIECE_AUDIO_CONFIG
+    await Audio.setAudioModeAsync(config)
+    return { success: true, mode: useSpeaker ? 'speaker' : 'earpiece' }
+  } catch (error) {
+    return { success: false, error: error.message }
   }
 }
 
@@ -256,6 +342,7 @@ export const isAudioPlaybackSupported = () => {
 
 export default {
   initializeAudioMode,
+  switchAudioOutput,
   isValidAudioUrl,
   loadAudioWithRetry,
   preloadAudioFiles,
