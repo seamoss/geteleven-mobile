@@ -45,12 +45,15 @@ const config = {
           NSAllowsArbitraryLoads: false,
           NSAllowsArbitraryLoadsInWebContent: false,
           NSExceptionDomains: {
-            localhost: {
-              NSExceptionAllowsInsecureHTTPLoads: true,
-              NSExceptionMinimumTLSVersion: '1.0',
-              NSExceptionRequiresForwardSecrecy: false,
-              NSExceptionAllowsLocalNetworking: true
-            },
+            // Only allow localhost in development builds
+            ...(IS_DEV ? {
+              localhost: {
+                NSExceptionAllowsInsecureHTTPLoads: true,
+                NSExceptionMinimumTLSVersion: '1.0',
+                NSExceptionRequiresForwardSecrecy: false,
+                NSExceptionAllowsLocalNetworking: true
+              }
+            } : {}),
             'geteleven-cdn.sfo2.digitaloceanspaces.com': {
               NSExceptionRequiresForwardSecrecy: false,
               NSExceptionMinimumTLSVersion: '1.2',
@@ -158,7 +161,7 @@ const config = {
                 sounds: []
               }
             ]
-            //"expo-apple-authentication"
+            // "expo-apple-authentication" // Disabled - not using Apple Sign In
           ]
         : [])
     ]
