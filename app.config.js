@@ -20,7 +20,7 @@ const config = {
     scheme: 'eleven',
     ios: {
       buildNumber: '2',
-      supportsTablet: true,
+      supportsTablet: false,
       bundleIdentifier: 'com.getelevenapp.mobile',
       associatedDomains: [
         'applinks:getelevenapp.com',
