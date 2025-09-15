@@ -34,7 +34,6 @@ const config = {
           'This app accesses the photo library to let you select a profile photo.',
         NSMicrophoneUsageDescription:
           'This app uses the microphone to record and send voice messages to your connections.',
-        UIBackgroundModes: ['audio'],
         AVAudioSessionCategoryOptions: [
           'MixWithOthers',
           'DuckOthers',
@@ -46,14 +45,16 @@ const config = {
           NSAllowsArbitraryLoadsInWebContent: false,
           NSExceptionDomains: {
             // Only allow localhost in development builds
-            ...(IS_DEV ? {
-              localhost: {
-                NSExceptionAllowsInsecureHTTPLoads: true,
-                NSExceptionMinimumTLSVersion: '1.0',
-                NSExceptionRequiresForwardSecrecy: false,
-                NSExceptionAllowsLocalNetworking: true
-              }
-            } : {}),
+            ...(IS_DEV
+              ? {
+                  localhost: {
+                    NSExceptionAllowsInsecureHTTPLoads: true,
+                    NSExceptionMinimumTLSVersion: '1.0',
+                    NSExceptionRequiresForwardSecrecy: false,
+                    NSExceptionAllowsLocalNetworking: true
+                  }
+                }
+              : {}),
             'geteleven-cdn.sfo2.digitaloceanspaces.com': {
               NSExceptionRequiresForwardSecrecy: false,
               NSExceptionMinimumTLSVersion: '1.2',
@@ -83,11 +84,7 @@ const config = {
         policy: 'appVersion'
       },
       entitlements: {
-        'aps-environment': 'development',
-        'com.apple.developer.in-app-payments': [
-          'merchant.com.getelevenapp.mobile'
-        ],
-        'com.apple.external-accessory.wireless-configuration': true
+        'aps-environment': 'development'
       }
     },
     android: {
