@@ -20,8 +20,9 @@ import {
   LogOut,
   Bug,
   CreditCard,
+  Trash2
 } from 'lucide-react-native'
-import { authCheck, signOut } from '../lib/auth'
+import { authCheck, signOut, deleteAccount } from '../lib/auth'
 import { replaceDomain, formatAvatarName } from '../lib/util'
 import { TextStyles, Colors } from '../styles/fonts'
 import useTransition from '../hooks/transition'
@@ -160,7 +161,6 @@ export default function SettingsScreen () {
     navigate('DebugSettings')
   }
 
-
   const handleCancelSubscriptionPress = () => {
     Alert.alert(
       'Cancel Subscription',
@@ -194,6 +194,62 @@ export default function SettingsScreen () {
                 'Failed to cancel subscription. Please try again or contact support.'
               )
             }
+          }
+        }
+      ]
+    )
+  }
+
+  const handleDeleteAccountPress = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to permanently delete your Eleven account? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: () => {
+            // Show second confirmation
+            Alert.alert(
+              'Confirm Account Deletion',
+              'This will permanently delete your account, all your messages, and connections. Are you absolutely sure?',
+              [
+                {
+                  text: 'Cancel',
+                  style: 'cancel'
+                },
+                {
+                  text: 'Yes, Delete My Account',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      setLoading(true)
+                      const result = await deleteAccount(authToken)
+                      if (result.success) {
+                        navigate('Home', { animation: 'slide_from_left' })
+                      } else {
+                        setLoading(false)
+                        Alert.alert(
+                          'Error',
+                          result.error ||
+                            'Failed to delete account. Please try again.'
+                        )
+                      }
+                    } catch (error) {
+                      setLoading(false)
+                      Alert.alert(
+                        'Error',
+                        'Failed to delete account. Please try again.'
+                      )
+                    }
+                  }
+                }
+              ]
+            )
           }
         }
       ]
@@ -254,15 +310,22 @@ export default function SettingsScreen () {
           {/* User Avatar Section */}
           <View style={styles.avatarSection}>
             <ElevenAvatar
-              src={meData.avatar_url ? replaceDomain(
-                meData.avatar_url,
-                'ik.imagekit.io/geteleven/tr:h-300'
-              ) : null}
+              src={
+                meData.avatar_url
+                  ? replaceDomain(
+                      meData.avatar_url,
+                      'ik.imagekit.io/geteleven/tr:h-300'
+                    )
+                  : null
+              }
               size={100}
               borderColor='#f1f5f9'
               borderWidth={2}
               showNameLabel={true}
-              name={formatAvatarName(meData.first_name || '', meData.last_name || '')}
+              name={formatAvatarName(
+                meData.first_name || '',
+                meData.last_name || ''
+              )}
               borderRadius={15}
             />
 
@@ -341,6 +404,13 @@ export default function SettingsScreen () {
               label='Sign out'
               tip='Sign out of your Eleven account.'
               onPress={handleSignOutPress}
+            />
+            <SettingsRow
+              Icon={Trash2}
+              label='Delete account'
+              tip='Permanently delete your Eleven account.'
+              onPress={handleDeleteAccountPress}
+              color='#dc2626'
             />
           </View>
         </View>
