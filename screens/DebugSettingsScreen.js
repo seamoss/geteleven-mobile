@@ -785,6 +785,14 @@ export default function DebugSettingsScreen () {
             tip='Clear onboarding progress to test welcome screens.'
             onPress={resetOnboardingState}
           />
+
+          <DebugRow
+            Icon={Trash2}
+            label='Preview Account Deleted Screen'
+            tip='Preview the account deletion confirmation screen.'
+            onPress={() => navigate('AccountDeleted')}
+            color='#64748B'
+          />
         </View>
 
         {/* RevenueCat / In-App Purchases Section */}

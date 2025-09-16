@@ -230,7 +230,7 @@ export default function SettingsScreen () {
                       setLoading(true)
                       const result = await deleteAccount(authToken)
                       if (result.success) {
-                        navigate('Home', { animation: 'slide_from_left' })
+                        navigate('AccountDeleted', { animation: 'slide_from_right' })
                       } else {
                         setLoading(false)
                         Alert.alert(

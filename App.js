@@ -33,6 +33,7 @@ import SettingsAvatarScreen from './screens/SettingsAvatarScreen'
 import SettingsProfileScreen from './screens/SettingsProfileScreen'
 import SettingsUsernameScreen from './screens/SettingsUsernameScreen'
 import DebugSettingsScreen from './screens/DebugSettingsScreen'
+import AccountDeletedScreen from './screens/AccountDeletedScreen'
 import OnboardingWelcomeScreen from './screens/OnboardingWelcomeScreen'
 import OnboardingPermissionsScreen from './screens/OnboardingPermissionsScreen'
 import OnboardingPushPermissionsScreen from './screens/OnboardingPushPermissionsScreen'
@@ -303,6 +304,7 @@ export default function App () {
           component={SettingsUsernameScreen}
         />
         <Stack.Screen name='DebugSettings' component={DebugSettingsScreen} />
+        <Stack.Screen name='AccountDeleted' component={AccountDeletedScreen} />
       </Stack.Navigator>
       <StatusBar style='auto' />
     </NavigationContainer>
