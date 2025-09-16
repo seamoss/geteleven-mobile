@@ -659,6 +659,92 @@ export default function DebugSettingsScreen () {
     )
   }
 
+  const runEnvironmentDiagnostics = async () => {
+    Alert.alert(
+      'Environment Diagnostics',
+      'This will check environment variables and EAS update compatibility.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Run Diagnostics',
+          onPress: async () => {
+            try {
+              setLoading(true)
+
+              console.log('=== ENVIRONMENT DIAGNOSTICS ===')
+
+              // Import required modules
+              const Constants = require('expo-constants').default
+              const { getFeatureConfig } = require('../lib/featureFlags')
+
+              // Check environment variables
+              console.log('1. Environment Variables:')
+              console.log('  - __DEV__:', __DEV__)
+              console.log('  - NODE_ENV:', process.env.NODE_ENV)
+              console.log('  - EAS_BUILD:', process.env.EAS_BUILD)
+
+              // Check Expo Constants
+              console.log('2. Expo Constants:')
+              console.log('  - executionEnvironment:', Constants.executionEnvironment)
+              console.log('  - releaseChannel:', Constants.releaseChannel)
+              console.log('  - manifest channel:', Constants.manifest?.releaseChannel)
+              console.log('  - expoConfig channel:', Constants.expoConfig?.channel)
+
+              // Check RevenueCat environment variables
+              console.log('3. RevenueCat Environment:')
+              const iosKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS
+              const androidKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID
+              const iosKeyExtra = Constants.expoConfig?.extra?.REVENUECAT_API_KEY_IOS
+              const androidKeyExtra = Constants.expoConfig?.extra?.REVENUECAT_API_KEY_ANDROID
+
+              console.log('  - EXPO_PUBLIC_REVENUECAT_API_KEY_IOS:', iosKey ? `${iosKey.substring(0, 10)}...` : 'NOT SET')
+              console.log('  - EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID:', androidKey ? `${androidKey.substring(0, 10)}...` : 'NOT SET')
+              console.log('  - extra.REVENUECAT_API_KEY_IOS:', iosKeyExtra ? `${iosKeyExtra.substring(0, 10)}...` : 'NOT SET')
+              console.log('  - extra.REVENUECAT_API_KEY_ANDROID:', androidKeyExtra ? `${androidKeyExtra.substring(0, 10)}...` : 'NOT SET')
+
+              // Check feature flags
+              console.log('4. Feature Flags:')
+              const featureIosKey = getFeatureConfig('REVENUECAT_API_KEY_IOS')
+              const featureAndroidKey = getFeatureConfig('REVENUECAT_API_KEY_ANDROID')
+              console.log('  - Feature flag iOS key:', featureIosKey ? `${featureIosKey.substring(0, 10)}...` : 'NOT SET')
+              console.log('  - Feature flag Android key:', featureAndroidKey ? `${featureAndroidKey.substring(0, 10)}...` : 'NOT SET')
+              console.log('  - IN_APP_PURCHASES_ENABLED:', getFeatureConfig('IN_APP_PURCHASES_ENABLED'))
+
+              // Check update context
+              console.log('5. Update Context:')
+              console.log('  - Updates.isEmbeddedLaunch:', Constants.isEmbeddedLaunch)
+              console.log('  - Updates.updateId:', Constants.manifest?.id || 'Not available')
+
+              console.log('=== DIAGNOSTICS COMPLETE ===')
+
+              // Determine likely issues
+              let issues = []
+              if (!iosKey && !iosKeyExtra && !featureIosKey) {
+                issues.push('iOS RevenueCat API key not found in any environment source')
+              }
+              if (!getFeatureConfig('IN_APP_PURCHASES_ENABLED')) {
+                issues.push('In-app purchases are disabled in feature flags')
+              }
+
+              Alert.alert(
+                'Diagnostics Complete',
+                issues.length > 0
+                  ? `Found ${issues.length} potential issues:\n\n• ${issues.join('\n• ')}\n\nCheck console for full details.`
+                  : 'No obvious issues found. Check console for full environment details.',
+                [{ text: 'OK' }]
+              )
+            } catch (error) {
+              console.error('Error running environment diagnostics:', error)
+              Alert.alert('Error', 'Failed to run environment diagnostics')
+            } finally {
+              setLoading(false)
+            }
+          }
+        }
+      ]
+    )
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content}>
@@ -822,6 +908,24 @@ export default function DebugSettingsScreen () {
             tip='Comprehensive RevenueCat diagnostics with verbose logging.'
             onPress={runRevenueCatDebug}
             disabled={loading}
+          />
+
+          <DebugRow
+            Icon={Activity}
+            label='Environment Diagnostics'
+            tip='Check environment variables and EAS update compatibility for RevenueCat.'
+            onPress={runEnvironmentDiagnostics}
+            disabled={loading}
+            color='#f59e0b'
+          />
+
+          <DebugRow
+            Icon={Settings}
+            label='RevenueCat Debug Screen'
+            tip='Open detailed RevenueCat debug interface with live status and manual controls.'
+            onPress={() => navigate('DebugRevenueCat')}
+            disabled={loading}
+            color='#8B5CF6'
           />
         </View>
 

@@ -465,9 +465,9 @@ class RevenueCatService {
         return false
       }
 
-      // Check if user has the 'pro' entitlement
+      // Check if user has the 'Pro' entitlement
       const entitlementId =
-        getFeatureConfig('REVENUECAT_ENTITLEMENT_ID') || 'pro'
+        getFeatureConfig('REVENUECAT_ENTITLEMENT_ID') || 'Pro'
       const entitlement = customerInfo.entitlements.active[entitlementId]
 
       return !!entitlement

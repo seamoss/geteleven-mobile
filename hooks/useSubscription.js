@@ -4,8 +4,10 @@ import { PACKAGE_TYPE } from 'react-native-purchases'
 import RevenueCatService from '../services/RevenueCatService'
 import { getFeatureConfig, isFeatureEnabled } from '../lib/featureFlags'
 import useSubscriptionConfirmation from './useSubscriptionConfirmation'
+import { authCheck } from '../lib/auth'
+import api from '../lib/api'
 
-export default function useSubscription () {
+export default function useSubscription (onSubscriptionChange = null) {
   const [isLoading, setIsLoading] = useState(false)
   const [monthlyPackage, setMonthlyPackage] = useState(null)
   const [yearlyPackage, setYearlyPackage] = useState(null)
@@ -15,6 +17,7 @@ export default function useSubscription () {
   const [debugInfo, setDebugInfo] = useState({})
 
   const debugMode = getFeatureConfig('DEBUG_PAYMENT_FLOWS') || false
+  const { isAuthenticated, authToken } = authCheck()
   const {
     confirmSubscription,
     isConfirming,
@@ -33,14 +36,24 @@ export default function useSubscription () {
   }
 
   useEffect(() => {
-    initializeRevenueCat()
+    // Initialize RevenueCat on first load
+    if (!isInitialized) {
+      initializeRevenueCat()
+    }
   }, [])
+
+  useEffect(() => {
+    // Login to RevenueCat when user becomes authenticated
+    if (isAuthenticated && authToken && isInitialized) {
+      loginToRevenueCat()
+    }
+  }, [isAuthenticated, authToken, isInitialized])
 
   const initializeRevenueCat = async () => {
     try {
       debug('Starting RevenueCat initialization...')
 
-      // Initialize RevenueCat
+      // Initialize RevenueCat without user ID (anonymous)
       const initialized = await RevenueCatService.initialize()
 
       debug('Initialization result:', { initialized })
@@ -75,6 +88,63 @@ export default function useSubscription () {
           [{ text: 'OK' }]
         )
       }
+    }
+  }
+
+  const loginToRevenueCat = async () => {
+    try {
+      // First get the user data to get the user ID
+      debug('Fetching user data for RevenueCat login...')
+      const userResponse = await api('GET', '/users/me', {}, authToken)
+
+      if (userResponse.error) {
+        debug('Failed to fetch user data for RevenueCat login:', userResponse.error)
+        return
+      }
+
+      const userData = userResponse.data
+      debug('Fetched user data:', userData)
+
+      if (!userData?.id) {
+        debug('No user ID found in response data')
+        return
+      }
+
+      const userIdString = userData.id.toString()
+      debug('Logging in to RevenueCat with user ID:', userIdString)
+
+      const customerInfo = await RevenueCatService.login(userIdString)
+      debug('RevenueCat login result:', {
+        success: !!customerInfo,
+        revenueCatUserId: customerInfo?.originalAppUserId
+      })
+
+      // Update backend with RevenueCat user ID
+      if (customerInfo?.originalAppUserId && isUserAuthenticated) {
+        try {
+          debug('Updating backend with RevenueCat user ID:', customerInfo.originalAppUserId)
+          const response = await api('PUT', '/users/me/revenuecat-id', {
+            revenuecatUserId: customerInfo.originalAppUserId
+          }, authToken)
+
+          if (response.error) {
+            debug('Failed to update backend with RevenueCat user ID:', response.error)
+          } else {
+            debug('Successfully updated backend with RevenueCat user ID')
+          }
+        } catch (backendError) {
+          debug('Error updating backend with RevenueCat user ID:', backendError.message)
+        }
+      }
+
+      // Refresh subscription status after login
+      await checkSubscriptionStatus()
+    } catch (error) {
+      console.error('Failed to login to RevenueCat:', error)
+      debug('RevenueCat login error:', {
+        message: error.message,
+        code: error.code
+      })
     }
   }
 
@@ -218,7 +288,7 @@ export default function useSubscription () {
 
       // Check if purchase was successful
       const entitlementId =
-        getFeatureConfig('REVENUECAT_ENTITLEMENT_ID') || 'pro'
+        getFeatureConfig('REVENUECAT_ENTITLEMENT_ID') || 'Pro'
       const hasEntitlement = customerInfo.entitlements.active[entitlementId]
 
       debug('Purchase result:', {
@@ -274,6 +344,12 @@ export default function useSubscription () {
         }
 
         setHasActiveSubscription(true)
+        // Refresh subscription status to ensure UI is in sync
+        await checkSubscriptionStatus()
+        // Notify parent component that subscription status changed
+        if (onSubscriptionChange) {
+          onSubscriptionChange(true)
+        }
         return customerInfo
       } else {
         // Purchase was processed but entitlement not granted
@@ -348,29 +424,68 @@ export default function useSubscription () {
     setIsLoading(true)
 
     try {
+      debug('Starting subscription restore...')
       const customerInfo = await RevenueCatService.restorePurchases()
 
       // Check if user has active subscription
       const entitlementId =
-        getFeatureConfig('REVENUECAT_ENTITLEMENT_ID') || 'pro'
+        getFeatureConfig('REVENUECAT_ENTITLEMENT_ID') || 'Pro'
       const hasEntitlement = customerInfo.entitlements.active[entitlementId]
 
+      debug('Initial restore result:', {
+        hasEntitlement,
+        entitlementId,
+        activeEntitlements: Object.keys(customerInfo.entitlements.active)
+      })
+
       if (hasEntitlement) {
+        // Set state immediately
+        setHasActiveSubscription(true)
+
+        // Wait a bit for backend processes to complete
+        debug('Waiting for backend sync after restore...')
+        await new Promise(resolve => setTimeout(resolve, 2000))
+
+        // Retry status check multiple times with delays
+        let retryCount = 0
+        const maxRetries = 3
+
+        while (retryCount < maxRetries) {
+          debug(`Checking subscription status (attempt ${retryCount + 1}/${maxRetries})`)
+          await checkSubscriptionStatus()
+
+          // Wait between retries
+          if (retryCount < maxRetries - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1500))
+          }
+          retryCount++
+        }
+
+        // Notify parent component that subscription status changed
+        if (onSubscriptionChange) {
+          debug('Notifying parent component of subscription change')
+          onSubscriptionChange(true)
+        }
+
         Alert.alert(
           'Subscription Restored',
           'Your subscription has been successfully restored!'
         )
-        setHasActiveSubscription(true)
       } else {
         Alert.alert(
           'No Subscription Found',
           'No active subscription was found for your account.'
         )
+        setHasActiveSubscription(false)
       }
 
       return customerInfo
     } catch (error) {
       console.error('Restore subscription error:', error)
+      debug('Restore error:', {
+        message: error.message,
+        code: error.code
+      })
       Alert.alert(
         'Restore Failed',
         'There was an error restoring your purchases. Please try again.'

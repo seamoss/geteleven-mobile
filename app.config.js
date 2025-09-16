@@ -141,7 +141,10 @@ const config = {
     extra: {
       eas: {
         projectId: 'a15191fc-bdca-4e57-ac76-b1b678bcac7f'
-      }
+      },
+      // RevenueCat API keys for fallback in feature flags
+      REVENUECAT_API_KEY_IOS: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS,
+      REVENUECAT_API_KEY_ANDROID: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID
     },
     updates: {
       url: 'https://u.expo.dev/a15191fc-bdca-4e57-ac76-b1b678bcac7f'

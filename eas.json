@@ -19,7 +19,9 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://platform.getelevenapp.com/v1"
+        "EXPO_PUBLIC_API_URL": "https://platform.getelevenapp.com/v1",
+        "EXPO_PUBLIC_REVENUECAT_API_KEY_IOS": "$REVENUECAT_API_KEY_IOS",
+        "EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID": "$REVENUECAT_API_KEY_ANDROID"
       },
       "ios": {
         "resourceClass": "m-medium"

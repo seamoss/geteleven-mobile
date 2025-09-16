@@ -9,7 +9,6 @@ import { useFonts } from 'expo-font'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import PushNotificationService from './services/PushNotificationService'
 import AuthService from './services/AuthService'
-import RevenueCatService from './services/RevenueCatService'
 import {
   Inter_300Light,
   Inter_400Regular,
@@ -33,6 +32,7 @@ import SettingsAvatarScreen from './screens/SettingsAvatarScreen'
 import SettingsProfileScreen from './screens/SettingsProfileScreen'
 import SettingsUsernameScreen from './screens/SettingsUsernameScreen'
 import DebugSettingsScreen from './screens/DebugSettingsScreen'
+import DebugRevenueCatScreen from './screens/DebugRevenueCatScreen'
 import AccountDeletedScreen from './screens/AccountDeletedScreen'
 import OnboardingWelcomeScreen from './screens/OnboardingWelcomeScreen'
 import OnboardingPermissionsScreen from './screens/OnboardingPermissionsScreen'
@@ -108,10 +108,7 @@ export default function App () {
   useEffect(() => {
     initializeAutoUpdates()
     audioRoutingManager.initialize()
-    
-    // Initialize RevenueCat early in app lifecycle
-    initializeRevenueCat()
-    
+
     // Validate auth token on app start
     validateAuthOnStartup()
 
@@ -134,30 +131,6 @@ export default function App () {
     }
   }, [])
 
-  const initializeRevenueCat = async () => {
-    try {
-      console.log('🔄 [App] Initializing RevenueCat on app startup...')
-      const result = await RevenueCatService.initialize()
-      
-      if (result) {
-        console.log('✅ [App] RevenueCat initialized successfully')
-        
-        // Load offerings to trigger product ID loading
-        console.log('🔄 [App] Loading offerings to verify product setup...')
-        const offerings = await RevenueCatService.getOfferings()
-        
-        if (offerings && offerings.current && offerings.current.availablePackages.length > 0) {
-          console.log(`✅ [App] Loaded ${offerings.current.availablePackages.length} product packages successfully`)
-        } else {
-          console.warn('⚠️ [App] RevenueCat initialized but no product packages found')
-        }
-      } else {
-        console.warn('⚠️ [App] RevenueCat initialization failed')
-      }
-    } catch (error) {
-      console.error('❌ [App] Error initializing RevenueCat:', error)
-    }
-  }
 
   const validateAuthOnStartup = async () => {
     try {
@@ -304,6 +277,7 @@ export default function App () {
           component={SettingsUsernameScreen}
         />
         <Stack.Screen name='DebugSettings' component={DebugSettingsScreen} />
+        <Stack.Screen name='DebugRevenueCat' component={DebugRevenueCatScreen} />
         <Stack.Screen name='AccountDeleted' component={AccountDeletedScreen} />
       </Stack.Navigator>
       <StatusBar style='auto' />

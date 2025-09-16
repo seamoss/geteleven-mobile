@@ -71,7 +71,7 @@ export default function SettingsScreen () {
     hasActiveSubscription,
     cancelSubscription,
     isLoading: subscriptionLoading
-  } = useSubscription()
+  } = useSubscription(fetchUserData)
 
   useEffect(() => {
     setLoading(true)
@@ -160,6 +160,7 @@ export default function SettingsScreen () {
   const handleDebugPress = () => {
     navigate('DebugSettings')
   }
+
 
   const handleCancelSubscriptionPress = () => {
     Alert.alert(
