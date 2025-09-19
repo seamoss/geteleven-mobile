@@ -5,13 +5,14 @@ import {
   StyleSheet,
   Modal,
   TouchableOpacity,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { X, RotateCw } from 'lucide-react-native'
 
 import { TextStyles, Colors } from '../styles/fonts'
-import { getResponsiveSpacing } from '../utils/responsive'
+import { getResponsiveSpacing, scale } from '../utils/responsive'
 import useSubscription from '../hooks/useSubscription'
 
 export default function UpgradeModal ({ visible, onClose, onSuccess }) {
@@ -125,6 +126,30 @@ export default function UpgradeModal ({ visible, onClose, onSuccess }) {
               <RotateCw size={16} color={Colors.copy} strokeWidth={2} />
               <Text style={styles.restoreButtonText}>Restore purchases</Text>
             </TouchableOpacity>
+
+            <View style={styles.legalContainer}>
+              <Text style={styles.legalText}>
+                <Text
+                  style={styles.linkText}
+                  onPress={() =>
+                    Linking.openURL('https://getelevenapp.com/privacy')
+                  }
+                >
+                  Privacy Policy
+                </Text>
+                {' - '}
+                <Text
+                  style={styles.linkText}
+                  onPress={() =>
+                    Linking.openURL(
+                      'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'
+                    )
+                  }
+                >
+                  Terms of Use
+                </Text>
+              </Text>
+            </View>
 
             <TouchableOpacity
               style={[
@@ -284,5 +309,24 @@ const styles = StyleSheet.create({
     color: Colors.copy,
     fontSize: 14,
     fontWeight: '500'
+  },
+  legalContainer: {
+    position: 'absolute',
+    bottom: 160,
+    left: 0,
+    right: 0,
+    paddingHorizontal: scale(20),
+    alignItems: 'center'
+  },
+  legalText: {
+    ...TextStyles.body,
+    fontSize: scale(13),
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: scale(16)
+  },
+  linkText: {
+    color: Colors.darkButton,
+    textDecorationLine: 'underline'
   }
 })
