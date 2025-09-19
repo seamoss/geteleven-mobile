@@ -7,7 +7,8 @@ import {
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Linking
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -25,7 +26,7 @@ import {
   Colors,
   FontFamilies
 } from '../styles/fonts'
-import { getImageSize, getResponsiveSpacing } from '../utils/responsive'
+import { getImageSize, getResponsiveSpacing, scale } from '../utils/responsive'
 
 // Import the SVG images
 import SignupSvg from '../assets/images/svg/signup.svg'
@@ -217,7 +218,24 @@ export default function AuthScreen ({ navigation, route }) {
           try {
             const { me } = User(result.data.authToken)
             const userResponse = await me()
+
+            // Check if API call was successful and we have user data
+            if (userResponse.error || !userResponse.data) {
+              console.warn('Failed to fetch user profile:', userResponse.error)
+              // On API error, default to connections to avoid blocking user
+              if (redirectTo && redirectParams) {
+                navigation.navigate(redirectTo, redirectParams)
+              } else {
+                navigation.navigate('Connections')
+              }
+              return
+            }
+
             const userData = userResponse.data
+
+            // Special handling for test account (5039870801)
+            const cleanPhone = phone.replace(/\D/g, '')
+            const isTestAccount = cleanPhone === '5039870801'
 
             // Check if user has first name, last name, and avatar
             const hasFirstName =
@@ -226,6 +244,27 @@ export default function AuthScreen ({ navigation, route }) {
               userData?.last_name && userData.last_name.trim() !== ''
             const hasAvatar =
               userData?.avatar_url && userData.avatar_url.trim() !== ''
+
+            console.log('Profile completeness check:', {
+              hasFirstName,
+              hasLastName,
+              hasAvatar,
+              firstName: userData?.first_name,
+              lastName: userData?.last_name,
+              avatarUrl: userData?.avatar_url,
+              isTestAccount
+            })
+
+            // For test account, skip profile completeness check and go straight to app
+            if (isTestAccount) {
+              console.log('Test account detected, skipping profile check')
+              if (redirectTo && redirectParams) {
+                navigation.navigate(redirectTo, redirectParams)
+              } else {
+                navigation.navigate('Connections')
+              }
+              return
+            }
 
             // If coming from deep link, go to recording first regardless of profile status
             if (redirectTo && redirectParams) {
@@ -251,6 +290,7 @@ export default function AuthScreen ({ navigation, route }) {
               }
             }
           } catch (profileError) {
+            console.error('Profile check error:', profileError)
             // If we can't check the profile, handle redirect or default to connections
             if (redirectTo && redirectParams) {
               navigation.navigate(redirectTo, redirectParams)
@@ -372,6 +412,35 @@ export default function AuthScreen ({ navigation, route }) {
             )}
           </View>
         </KeyboardAvoidingView>
+
+        {/* Legal text for signup mode */}
+        {isSignup && step === 'send' && (
+          <View style={styles.legalContainer}>
+            <Text style={styles.legalText}>
+              By tapping continue, you agree to our{' '}
+              <Text
+                style={styles.linkText}
+                onPress={() =>
+                  Linking.openURL('https://getelevenapp.com/privacy')
+                }
+              >
+                privacy policy
+              </Text>{' '}
+              and Apple's{' '}
+              <Text
+                style={styles.linkText}
+                onPress={() =>
+                  Linking.openURL(
+                    'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'
+                  )
+                }
+              >
+                terms of use
+              </Text>
+              .
+            </Text>
+          </View>
+        )}
 
         {/* Fixed buttons at bottom - outside KeyboardAvoidingView */}
         <View style={styles.buttonGroup}>
@@ -517,5 +586,24 @@ const styles = StyleSheet.create({
     ...TextStyles.body,
     color: Colors.primary,
     fontSize: 14
+  },
+
+  legalContainer: {
+    marginTop: scale(40),
+    paddingHorizontal: scale(20),
+    width: '100%'
+  },
+
+  legalText: {
+    ...TextStyles.body,
+    fontSize: scale(13),
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: scale(16)
+  },
+
+  linkText: {
+    color: Colors.darkButton,
+    textDecorationLine: 'underline'
   }
 })
