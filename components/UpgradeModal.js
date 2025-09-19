@@ -32,7 +32,21 @@ export default function UpgradeModal ({ visible, onClose, onSuccess }) {
 
   useEffect(() => {
     // If user already has active subscription, close modal
+    console.log('[UpgradeModal] useEffect triggered:', {
+      hasActiveSubscription,
+      visible,
+      isLoading,
+      isInitialized
+    })
+
+    // In development, don't auto-close modal for testing
+    if (__DEV__) {
+      console.log('[UpgradeModal] Development mode - not auto-closing for testing')
+      return
+    }
+
     if (hasActiveSubscription && visible) {
+      console.log('[UpgradeModal] Closing modal due to active subscription')
       onClose()
       if (onSuccess) {
         onSuccess()
@@ -41,17 +55,38 @@ export default function UpgradeModal ({ visible, onClose, onSuccess }) {
   }, [hasActiveSubscription, visible])
 
   const handleContinueToPayment = async () => {
+    console.log('[UpgradeModal] Purchase initiated:', {
+      selectedPlan,
+      isLoading,
+      hasActiveSubscription,
+      isEnabled
+    })
+
     const purchase = await purchaseSubscription(selectedPlan)
+
+    console.log('[UpgradeModal] Purchase result:', {
+      purchase: !!purchase,
+      hasActiveSubscriptionAfter: hasActiveSubscription
+    })
+
     if (purchase) {
+      console.log('[UpgradeModal] Purchase successful, closing modal')
       onClose()
       if (onSuccess) {
         onSuccess()
       }
+    } else {
+      console.log('[UpgradeModal] Purchase failed or cancelled')
     }
   }
 
   const handleRestore = async () => {
-    await restoreSubscription()
+    console.log('[UpgradeModal] Restore initiated')
+    const result = await restoreSubscription()
+    console.log('[UpgradeModal] Restore completed:', {
+      success: !!result,
+      hasActiveSubscriptionAfter: hasActiveSubscription
+    })
   }
 
   return (
@@ -126,6 +161,37 @@ export default function UpgradeModal ({ visible, onClose, onSuccess }) {
               <RotateCw size={16} color={Colors.copy} strokeWidth={2} />
               <Text style={styles.restoreButtonText}>Restore purchases</Text>
             </TouchableOpacity>
+
+            {/* Debug Panel - Only show in development */}
+            {__DEV__ && (
+              <View style={styles.debugPanel}>
+                <Text style={styles.debugTitle}>Debug Info:</Text>
+                <Text style={styles.debugText}>
+                  hasActiveSubscription: {hasActiveSubscription ? 'true' : 'false'}
+                </Text>
+                <Text style={styles.debugText}>
+                  isLoading: {isLoading ? 'true' : 'false'}
+                </Text>
+                <Text style={styles.debugText}>
+                  isInitialized: {isInitialized ? 'true' : 'false'}
+                </Text>
+                <Text style={styles.debugText}>
+                  isEnabled: {isEnabled ? 'true' : 'false'}
+                </Text>
+                <Text style={styles.debugText}>
+                  visible: {visible ? 'true' : 'false'}
+                </Text>
+                <Text style={styles.debugText}>
+                  selectedPlan: {selectedPlan}
+                </Text>
+                <Text style={styles.debugText}>
+                  monthlyPackage: {monthlyPackage ? 'available' : 'null'}
+                </Text>
+                <Text style={styles.debugText}>
+                  yearlyPackage: {yearlyPackage ? 'available' : 'null'}
+                </Text>
+              </View>
+            )}
 
             <View style={styles.legalContainer}>
               <Text style={styles.legalText}>
@@ -328,5 +394,27 @@ const styles = StyleSheet.create({
   linkText: {
     color: Colors.darkButton,
     textDecorationLine: 'underline'
+  },
+  debugPanel: {
+    position: 'absolute',
+    bottom: 200,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    padding: scale(10),
+    borderRadius: scale(8),
+    marginHorizontal: scale(20)
+  },
+  debugTitle: {
+    color: '#fff',
+    fontSize: scale(12),
+    fontWeight: 'bold',
+    marginBottom: scale(5)
+  },
+  debugText: {
+    color: '#fff',
+    fontSize: scale(10),
+    fontFamily: 'monospace',
+    marginBottom: scale(2)
   }
 })

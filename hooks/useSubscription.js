@@ -442,6 +442,44 @@ export default function useSubscription (onSubscriptionChange = null) {
         // Set state immediately
         setHasActiveSubscription(true)
 
+        // Confirm with backend if user is authenticated (similar to purchase flow)
+        if (isUserAuthenticated && authToken) {
+          try {
+            debug('User authenticated, confirming restore with backend...')
+
+            // Get the active subscription product info
+            const activeSubscriptions = customerInfo.activeSubscriptions || []
+            let restoredProduct = null
+
+            if (activeSubscriptions.length > 0) {
+              // Create a mock product object for confirmation
+              const productId = activeSubscriptions[0]
+              restoredProduct = {
+                identifier: productId,
+                priceString: 'Restored', // We don't have price info for restored purchases
+                title: 'Restored Subscription'
+              }
+            }
+
+            const confirmationResult = await confirmSubscription(
+              customerInfo,
+              restoredProduct
+            )
+
+            if (confirmationResult.success) {
+              debug('Backend confirmation successful for restore')
+            } else {
+              debug('Backend confirmation failed for restore:', confirmationResult.error)
+              // Don't block restore flow - continue anyway
+            }
+          } catch (confirmationError) {
+            debug('Restore confirmation error (non-blocking):', confirmationError)
+            // Don't block restore flow - continue anyway
+          }
+        } else {
+          debug('User not authenticated, skipping backend confirmation for restore')
+        }
+
         // Wait a bit for backend processes to complete
         debug('Waiting for backend sync after restore...')
         await new Promise(resolve => setTimeout(resolve, 2000))

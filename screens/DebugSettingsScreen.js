@@ -32,7 +32,8 @@ import {
   Activity,
   Globe,
   ShoppingCart,
-  Zap
+  Zap,
+  RotateCw
 } from 'lucide-react-native'
 import { Colors } from '../styles/fonts'
 import useTransition from '../hooks/transition'
@@ -659,6 +660,51 @@ export default function DebugSettingsScreen () {
     )
   }
 
+  const resetSubscriptionState = async () => {
+    Alert.alert(
+      'Reset Subscription State',
+      'This will clear your RevenueCat association and deactivate subscriptions for testing. You can then make fresh purchases without conflicts.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true)
+
+              const response = await api('POST', '/users/me/subscription/reset', { reset: true }, authToken)
+
+              if (response.error) {
+                throw new Error(response.error)
+              }
+
+              // Also reset RevenueCat state by logging out
+              console.log('[DEBUG] Resetting RevenueCat state...')
+              try {
+                await RevenueCatService.logout()
+                console.log('[DEBUG] RevenueCat logout successful')
+              } catch (rcError) {
+                console.warn('[DEBUG] RevenueCat logout failed:', rcError)
+              }
+
+              Alert.alert(
+                'Subscription Reset',
+                'Your subscription state has been reset. You can now make fresh purchases in the upgrade screen.\n\nNote: You may need to restart the app for full reset.',
+                [{ text: 'OK' }]
+              )
+            } catch (error) {
+              console.error('Error resetting subscription state:', error)
+              Alert.alert('Error', `Failed to reset subscription state: ${error.message}`)
+            } finally {
+              setLoading(false)
+            }
+          }
+        }
+      ]
+    )
+  }
+
   const runEnvironmentDiagnostics = async () => {
     Alert.alert(
       'Environment Diagnostics',
@@ -926,6 +972,15 @@ export default function DebugSettingsScreen () {
             onPress={() => navigate('DebugRevenueCat')}
             disabled={loading}
             color='#8B5CF6'
+          />
+
+          <DebugRow
+            Icon={RotateCw}
+            label='Reset Subscription State'
+            tip='Clear RevenueCat association for testing. Use this instead of manually changing DB data.'
+            onPress={resetSubscriptionState}
+            disabled={loading || !authToken}
+            color='#ef4444'
           />
         </View>
 
