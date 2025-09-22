@@ -10,7 +10,7 @@ import { Platform } from 'react-native'
  */
 
 class AudioRoutingManager {
-  constructor() {
+  constructor () {
     this.isInitialized = false
     this.currentMode = 'speaker'
   }
@@ -19,7 +19,7 @@ class AudioRoutingManager {
    * Initialize audio routing based on device state
    * Should be called when app starts and when playback begins
    */
-  async initialize() {
+  async initialize () {
     try {
       // Default configuration that respects the system's audio routing
       const baseConfig = {
@@ -28,8 +28,8 @@ class AudioRoutingManager {
         playsInSilentModeIOS: true, // Always allow playback
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
-        interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_MIX_WITH_OTHERS,
-        interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS
+        interruptionModeIOS: 1,
+        interruptionModeAndroid: 1
       }
 
       // On iOS, we'll use different categories to control routing
@@ -46,12 +46,11 @@ class AudioRoutingManager {
           // based on the ringer switch and connected devices
           playsInSilentModeIOS: true
         }
-        
+
         await Audio.setAudioModeAsync(iosConfig)
-        
+
         // Note: The actual routing (speaker vs earpiece) will be handled
         // by iOS based on the ringer switch position and connected devices
-        
       } else {
         // Android configuration
         await Audio.setAudioModeAsync(baseConfig)
@@ -69,7 +68,7 @@ class AudioRoutingManager {
    * Configure audio for playback
    * This should be called before playing any audio
    */
-  async configureForPlayback() {
+  async configureForPlayback () {
     if (!this.isInitialized) {
       await this.initialize()
     }
@@ -81,15 +80,15 @@ class AudioRoutingManager {
         // 1. Connected devices (Bluetooth, AirPlay, etc.)
         // 2. Ringer switch position
         // 3. User's audio route preferences
-        
+
         const playbackConfig = {
           allowsRecordingIOS: true, // Needed for flexible routing
           staysActiveInBackground: true,
           playsInSilentModeIOS: true, // Ensure audio plays even in silent mode
           shouldDuckAndroid: true,
           playThroughEarpieceAndroid: false,
-          interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_MIX_WITH_OTHERS,
-          interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS
+          interruptionModeIOS: 1,
+          interruptionModeAndroid: 1
         }
 
         await Audio.setAudioModeAsync(playbackConfig)
@@ -105,7 +104,7 @@ class AudioRoutingManager {
   /**
    * Force audio to speaker (override silent mode)
    */
-  async forceSpeaker() {
+  async forceSpeaker () {
     try {
       const config = {
         allowsRecordingIOS: false,
@@ -113,8 +112,8 @@ class AudioRoutingManager {
         playsInSilentModeIOS: true,
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
-        interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_MIX_WITH_OTHERS,
-        interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS
+        interruptionModeIOS: 1,
+        interruptionModeAndroid: 1
       }
 
       await Audio.setAudioModeAsync(config)
@@ -129,7 +128,7 @@ class AudioRoutingManager {
   /**
    * Force audio to earpiece
    */
-  async forceEarpiece() {
+  async forceEarpiece () {
     try {
       const config = {
         allowsRecordingIOS: true, // Required for earpiece on iOS
@@ -137,8 +136,8 @@ class AudioRoutingManager {
         playsInSilentModeIOS: true,
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: true,
-        interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_MIX_WITH_OTHERS,
-        interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS
+        interruptionModeIOS: 1,
+        interruptionModeAndroid: 1
       }
 
       await Audio.setAudioModeAsync(config)
@@ -153,7 +152,7 @@ class AudioRoutingManager {
   /**
    * Reset to default routing (let system decide)
    */
-  async resetToDefault() {
+  async resetToDefault () {
     return this.initialize()
   }
 }

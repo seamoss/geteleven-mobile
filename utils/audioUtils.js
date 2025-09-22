@@ -13,8 +13,8 @@ const SPEAKER_AUDIO_CONFIG = {
   playsInSilentModeIOS: false, // Respect silent mode when using speaker
   shouldDuckAndroid: true, // Lower other audio when playing
   playThroughEarpieceAndroid: false,
-  interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_MIX_WITH_OTHERS,
-  interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS
+  interruptionModeIOS: 1,
+  interruptionModeAndroid: 1
 }
 
 // Audio configuration for earpiece (quiet) playback
@@ -24,8 +24,8 @@ const EARPIECE_AUDIO_CONFIG = {
   playsInSilentModeIOS: true, // Always play through earpiece in silent mode
   shouldDuckAndroid: true,
   playThroughEarpieceAndroid: true, // Use earpiece on Android
-  interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_MIX_WITH_OTHERS,
-  interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS
+  interruptionModeIOS: 1,
+  interruptionModeAndroid: 1
 }
 
 // Development audio configuration
@@ -60,14 +60,16 @@ const detectSilentMode = async () => {
     // Try to play a very short silent sound to detect if silent mode is on
     // If it doesn't play, we're likely in silent mode
     const { sound } = await Audio.Sound.createAsync(
-      { uri: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=' },
+      {
+        uri: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='
+      },
       { shouldPlay: false, volume: 0 }
     )
-    
+
     // Check if we can play through speaker
     const status = await sound.getStatusAsync()
     await sound.unloadAsync()
-    
+
     // If playsInSilentModeIOS is false and device is muted, sound won't play
     return false // Default to not silent for initial implementation
   } catch {
@@ -89,7 +91,7 @@ export const initializeAudioMode = async (forceEarpiece = false) => {
 
     // Check for external devices first (highest priority)
     const hasExternalDevice = await checkForExternalDevices()
-    
+
     if (hasExternalDevice) {
       // If external device connected, use speaker config but system will route to device
       await Audio.setAudioModeAsync(SPEAKER_AUDIO_CONFIG)
@@ -102,7 +104,10 @@ export const initializeAudioMode = async (forceEarpiece = false) => {
 
     if (useEarpiece) {
       await Audio.setAudioModeAsync(EARPIECE_AUDIO_CONFIG)
-      return { mode: 'earpiece', reason: forceEarpiece ? 'forced' : 'silent_mode' }
+      return {
+        mode: 'earpiece',
+        reason: forceEarpiece ? 'forced' : 'silent_mode'
+      }
     } else {
       await Audio.setAudioModeAsync(SPEAKER_AUDIO_CONFIG)
       return { mode: 'speaker' }
@@ -118,7 +123,7 @@ export const initializeAudioMode = async (forceEarpiece = false) => {
  * Switch audio output between speaker and earpiece
  * @param {boolean} useSpeaker - true for speaker, false for earpiece
  */
-export const switchAudioOutput = async (useSpeaker) => {
+export const switchAudioOutput = async useSpeaker => {
   try {
     const config = useSpeaker ? SPEAKER_AUDIO_CONFIG : EARPIECE_AUDIO_CONFIG
     await Audio.setAudioModeAsync(config)

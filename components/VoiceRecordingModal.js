@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   Alert,
   Animated,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking,
+  Platform
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Audio } from 'expo-av'
@@ -176,59 +178,189 @@ export default function VoiceRecordingModal ({
   const startRecording = async () => {
     console.log('Starting recording...')
     try {
-      // Request permissions
-      const permissionResponse = await Audio.requestPermissionsAsync()
-      console.log('Permission status:', permissionResponse.status)
-      if (permissionResponse.status !== 'granted') {
+      // Always request permissions to ensure they are stable
+      console.log('Requesting microphone permission...')
+      let permissionResponse
+
+      try {
+        // First, check current status
+        const currentPermission = await Audio.getPermissionsAsync()
+        console.log('Current permission status:', currentPermission.status)
+
+        // Always request permissions, even if already granted, to ensure stability
+        permissionResponse = await Audio.requestPermissionsAsync()
+        console.log('Permission request response:', permissionResponse)
+
+        // Double-check the permission was actually granted
+        if (permissionResponse.status === 'granted') {
+          // Verify permissions are stable by checking again
+          const verifyPermission = await Audio.getPermissionsAsync()
+          console.log('Permission verification:', verifyPermission.status)
+
+          if (verifyPermission.status !== 'granted') {
+            console.error('Permission unstable - was granted but verification failed')
+            permissionResponse = verifyPermission
+          }
+        }
+      } catch (permErr) {
+        console.error('Permission request failed:', permErr)
         Alert.alert(
-          'Permission required',
-          'Please grant microphone permission to record voice messages.'
+          'Permission Error',
+          'Failed to request microphone permission. Please check your device settings and try again.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => {
+                if (Platform.OS === 'ios') {
+                  Linking.openURL('app-settings:')
+                }
+              }}
+          ]
         )
         return
       }
 
-      // Set audio mode for recording
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true
-      })
-      console.log('Audio mode set')
+      // Check if permission was granted
+      if (permissionResponse.status !== 'granted') {
+        console.warn('Microphone permission not granted:', permissionResponse)
+        Alert.alert(
+          'Microphone Permission Required',
+          'To record voice messages, please enable microphone access in your device settings.\n\nGo to Settings > Eleven > Microphone',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => {
+                if (Platform.OS === 'ios') {
+                  Linking.openURL('app-settings:')
+                }
+              }}
+          ]
+        )
+        return
+      }
 
-      const { recording } = await Audio.Recording.createAsync({
-        isMeteringEnabled: true,
-        android: {
-          extension: '.m4a',
-          outputFormat: Audio.AndroidOutputFormat.MPEG_4,
-          audioEncoder: Audio.AndroidAudioEncoder.AAC,
-          sampleRate: 44100,
-          numberOfChannels: 2,
-          bitRate: 128000
-        },
-        ios: {
-          extension: '.m4a',
-          outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
-          audioQuality: Audio.IOSAudioQuality.MAX,
-          sampleRate: 44100,
-          numberOfChannels: 2,
-          bitRate: 128000,
-          linearPCMBitDepth: 16,
-          linearPCMIsBigEndian: false,
-          linearPCMIsFloat: false
-        },
-        web: {
-          mimeType: 'audio/webm',
-          bitsPerSecond: 128000
+      console.log('Microphone permission confirmed as granted')
+
+      // Configure audio mode with retry logic
+      let audioModeSet = false
+      let retryCount = 0
+      const maxRetries = 3
+
+      while (!audioModeSet && retryCount < maxRetries) {
+        try {
+          console.log(`Setting audio mode (attempt ${retryCount + 1}/${maxRetries})...`)
+
+          // More comprehensive audio mode configuration
+          // For recording, we want to interrupt other audio (DoNotMix = 1)
+          await Audio.setAudioModeAsync({
+            allowsRecordingIOS: true,
+            playsInSilentModeIOS: true,
+            staysActiveInBackground: false,
+            shouldDuckAndroid: true,
+            playThroughEarpieceAndroid: false,
+            // Use numeric values from the documentation
+            // DoNotMix = 1 for both iOS and Android (interrupts other audio during recording)
+            interruptionModeIOS: 1,
+            interruptionModeAndroid: 1
+          })
+
+          audioModeSet = true
+          console.log('Audio mode set successfully')
+        } catch (audioModeErr) {
+          retryCount++
+          console.error(`Failed to set audio mode (attempt ${retryCount}):`, audioModeErr)
+
+          if (retryCount < maxRetries) {
+            // Wait a bit before retrying
+            await new Promise(resolve => setTimeout(resolve, 200))
+          } else {
+            throw new Error(`Audio configuration failed after ${maxRetries} attempts: ${audioModeErr.message}`)
+          }
         }
-      })
+      }
 
+      // Create recording with additional error context
+      console.log('Creating recording instance...')
+      let recording
+
+      try {
+        const recordingResult = await Audio.Recording.createAsync({
+          isMeteringEnabled: true,
+          android: {
+            extension: '.m4a',
+            outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+            audioEncoder: Audio.AndroidAudioEncoder.AAC,
+            sampleRate: 44100,
+            numberOfChannels: 2,
+            bitRate: 128000
+          },
+          ios: {
+            extension: '.m4a',
+            outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
+            audioQuality: Audio.IOSAudioQuality.MAX,
+            sampleRate: 44100,
+            numberOfChannels: 2,
+            bitRate: 128000,
+            linearPCMBitDepth: 16,
+            linearPCMIsBigEndian: false,
+            linearPCMIsFloat: false
+          },
+          web: {
+            mimeType: 'audio/webm',
+            bitsPerSecond: 128000
+          }
+        })
+
+        recording = recordingResult.recording
+      } catch (recordingErr) {
+        console.error('Recording creation failed:', {
+          message: recordingErr.message,
+          code: recordingErr.code,
+          stack: recordingErr.stack
+        })
+
+        // Provide more specific error messages
+        let errorMessage = 'Unable to start recording. '
+
+        if (recordingErr.message?.includes('permission')) {
+          errorMessage += 'Please check microphone permissions in Settings.'
+        } else if (recordingErr.message?.includes('audio')) {
+          errorMessage += 'Audio system is not available. Please restart the app.'
+        } else if (recordingErr.message?.includes('busy') || recordingErr.message?.includes('use')) {
+          errorMessage += 'Another app may be using the microphone. Please close other apps and try again.'
+        } else {
+          errorMessage += 'Please try again or restart the app if the problem persists.'
+        }
+
+        Alert.alert('Recording Error', errorMessage)
+        return
+      }
+
+      // Successfully started recording
       setRecording(recording)
       setIsRecording(true)
       setRecordingDuration(0)
       setIsRecordingUnloaded(false)
       console.log('Recording started successfully')
+
     } catch (err) {
-      console.error('Failed to start recording:', err)
-      Alert.alert('Error', 'Failed to start recording. Please try again.')
+      console.error('Unexpected recording error:', {
+        message: err.message,
+        code: err.code,
+        name: err.name,
+        stack: err.stack
+      })
+
+      // Check for specific error conditions
+      let userMessage = 'Unable to start recording. '
+
+      if (err.message?.includes('permission')) {
+        userMessage = 'Microphone access is required. Please enable it in Settings and try again.'
+      } else if (err.message?.includes('Audio configuration failed')) {
+        userMessage = 'Audio system initialization failed. Please restart the app and try again.'
+      } else {
+        userMessage += 'Please ensure no other apps are using the microphone and try again.'
+      }
+
+      Alert.alert('Recording Error', userMessage)
     }
   }
 

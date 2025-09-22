@@ -26,8 +26,8 @@ export const useAudioRouting = () => {
     playsInSilentModeIOS: false, // Respect silent mode
     shouldDuckAndroid: true,
     playThroughEarpieceAndroid: false,
-    interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_MIX_WITH_OTHERS,
-    interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS
+    interruptionModeIOS: 1,
+    interruptionModeAndroid: 1
   }
 
   const EARPIECE_CONFIG = {
@@ -36,8 +36,8 @@ export const useAudioRouting = () => {
     playsInSilentModeIOS: true, // Always play in silent mode
     shouldDuckAndroid: true,
     playThroughEarpieceAndroid: true,
-    interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_MIX_WITH_OTHERS,
-    interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS
+    interruptionModeIOS: 1,
+    interruptionModeAndroid: 1
   }
 
   // Check for silence mode using a workaround
@@ -49,8 +49,10 @@ export const useAudioRouting = () => {
     try {
       // Create a test sound with a very short silent audio
       const { sound } = await Audio.Sound.createAsync(
-        { uri: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=' },
-        { 
+        {
+          uri: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='
+        },
+        {
           shouldPlay: false,
           volume: 1.0
         }
@@ -58,7 +60,7 @@ export const useAudioRouting = () => {
 
       // Try to get the status
       const status = await sound.getStatusAsync()
-      
+
       // Set audio mode to check if we can play through speaker
       await Audio.setAudioModeAsync({
         ...SPEAKER_CONFIG,
@@ -67,16 +69,17 @@ export const useAudioRouting = () => {
 
       // Try to play the sound
       await sound.playAsync()
-      
+
       // Wait a brief moment
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Check if it actually played
       const playStatus = await sound.getStatusAsync()
       await sound.unloadAsync()
 
       // If the sound didn't play or position didn't advance, we're in silent mode
-      const inSilentMode = !playStatus.isPlaying && playStatus.positionMillis === 0
+      const inSilentMode =
+        !playStatus.isPlaying && playStatus.positionMillis === 0
 
       return inSilentMode
     } catch (error) {
@@ -142,18 +145,18 @@ export const useAudioRouting = () => {
   }
 
   // Switch between speaker and earpiece manually
-  const switchOutput = async (useSpeaker) => {
+  const switchOutput = async useSpeaker => {
     try {
       const config = useSpeaker ? SPEAKER_CONFIG : EARPIECE_CONFIG
       await Audio.setAudioModeAsync(config)
       setAudioMode(useSpeaker ? 'speaker' : 'earpiece')
-      
+
       // Save preference
       await AsyncStorage.setItem(
         AUDIO_PREFERENCE_KEY,
         useSpeaker ? 'speaker' : 'earpiece'
       )
-      
+
       return true
     } catch (error) {
       console.error('Error switching audio output:', error)
