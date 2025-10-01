@@ -55,7 +55,8 @@ const SettingsRow = ({
 }
 
 export default function SettingsScreen () {
-  const { navigate, loading, setLoading } = useTransition()
+  const { navigate } = useTransition()
+  const [loading, setLoading] = useState(false)
   const [meData, setMeData] = useState({
     manager: false,
     avatar_url: null,
@@ -286,7 +287,7 @@ export default function SettingsScreen () {
     )
   }
 
-  if (checkingAuth || loading) {
+  if (checkingAuth) {
     return <Loader />
   }
 

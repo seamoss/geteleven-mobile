@@ -115,7 +115,7 @@ const SettingsProfileScreen = ({ navigation }) => {
     firstName !== originalFirstName || lastName !== originalLastName
 
 
-  if (checkingAuth || loading) {
+  if (checkingAuth) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.loadingContainer}>

@@ -21,7 +21,8 @@ import Loader from '../components/Loader'
 import LogoSvg from '../assets/images/svg/logo.svg'
 
 export default function OnboardingPhotoScreen ({ navigation, route }) {
-  const { navigate, loading, setLoading } = useTransition()
+  const { navigate } = useTransition()
+  const [loading, setLoading] = useState(false)
   const [imageSelected, setImageSelected] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [meData, setMeData] = useState(null)
@@ -102,7 +103,7 @@ export default function OnboardingPhotoScreen ({ navigation, route }) {
   // Create a ref for the ImageUpload component
   const imageUploadRef = React.useRef()
 
-  if (checkingAuth || loading) {
+  if (checkingAuth) {
     return <Loader />
   }
 

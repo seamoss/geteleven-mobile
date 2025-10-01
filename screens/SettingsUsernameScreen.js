@@ -102,7 +102,7 @@ const SettingsUsernameScreen = ({ navigation }) => {
   // Check if username has changed from original
   const hasUsernameChanged = username !== originalUsername
 
-  if (checkingAuth || loading) {
+  if (checkingAuth) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle='dark-content' />

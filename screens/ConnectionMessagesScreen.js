@@ -24,7 +24,8 @@ import Loader from '../components/Loader'
 
 // Inner component that has access to PlaybackProvider context
 function ConnectionMessagesScreenInner () {
-  const { navigate, back, loading, setLoading } = useTransition()
+  const { navigate, back } = useTransition()
+  const [loading, setLoading] = useState(false)
   const route = useRoute()
   const { connectionId, autoRecord, isNewUser } = route.params || {}
   const { stopAll, cleanup } = usePlayback()
@@ -300,7 +301,7 @@ function ConnectionMessagesScreenInner () {
     message => !erroredMessages.has(message.id)
   )
 
-  if (checkingAuth || loading) {
+  if (checkingAuth) {
     return <Loader />
   }
 

@@ -1,13 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 
 export default function navTransition () {
-  const [loading, setLoading] = useState(false)
   const navigation = useNavigation()
 
   const navigate = useCallback(
     (screen, params) => {
-      setLoading(true)
       // Convert web routes to screen names
       const screenMap = {
         '/connections': 'Connections',
@@ -20,22 +18,19 @@ export default function navTransition () {
       }
 
       const mapping = screenMap[screen] || screen
-      
+
       if (typeof mapping === 'object') {
         navigation.navigate(mapping.screen, mapping.params)
       } else {
         navigation.navigate(mapping, params)
       }
-      setLoading(false)
     },
     [navigation]
   )
 
   const back = useCallback(() => {
-    setLoading(true)
     navigation.goBack()
-    setLoading(false)
   }, [navigation])
 
-  return { navigate, back, loading, setLoading }
+  return { navigate, back }
 }

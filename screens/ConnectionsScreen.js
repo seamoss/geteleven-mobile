@@ -26,7 +26,7 @@ import { replaceDomain } from '../lib/util'
 import { getResponsiveSpacing, scale, isSmallDevice } from '../utils/responsive'
 
 export default function ConnectionsScreen ({ navigation, route }) {
-  const { navigate, loading, setLoading } = navTransition()
+  const { navigate } = navTransition()
   const { isAuthenticated, authToken, checkingAuth } = authCheck()
   const { me, connections } = User(authToken)
 
@@ -36,6 +36,7 @@ export default function ConnectionsScreen ({ navigation, route }) {
   const [upgradeVisible, setUpgradeVisible] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [tourVisible, setTourVisible] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   // DEBUG FLAG: Set to true to test empty state, false for normal behavior
   const DEBUG_EMPTY_STATE = false
@@ -248,7 +249,7 @@ export default function ConnectionsScreen ({ navigation, route }) {
     }, 300) // Small delay for better UX
   }
 
-  if (checkingAuth || loading) {
+  if (checkingAuth) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>

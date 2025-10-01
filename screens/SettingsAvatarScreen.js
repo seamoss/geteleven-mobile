@@ -19,7 +19,8 @@ import ImageUpload from '../components/ImageUpload'
 import Loader from '../components/Loader'
 
 export default function SettingsAvatarScreen () {
-  const { navigate, loading, setLoading } = useTransition()
+  const { navigate } = useTransition()
+  const [loading, setLoading] = useState(false)
   const [meData, setMeData] = useState(null)
   const [readyToSave, setReadyToSave] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -91,7 +92,7 @@ export default function SettingsAvatarScreen () {
     setIsSaving(false)
   }
 
-  if (checkingAuth || loading) {
+  if (checkingAuth) {
     return <Loader />
   }
 

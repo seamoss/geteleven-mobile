@@ -19,7 +19,8 @@ import Loader from '../components/Loader'
 import LogoSvg from '../assets/images/svg/logo.svg'
 
 export default function OnboardingPreviewScreen ({ navigation, route }) {
-  const { navigate, loading, setLoading } = useTransition()
+  const { navigate } = useTransition()
+  const [loading, setLoading] = useState(false)
   const [isFinishing, setIsFinishing] = useState(false)
   const [meData, setMeData] = useState(null)
 
@@ -78,7 +79,7 @@ export default function OnboardingPreviewScreen ({ navigation, route }) {
     navigation.goBack()
   }
 
-  if (checkingAuth || loading) {
+  if (checkingAuth) {
     return <Loader />
   }
 
