@@ -367,13 +367,14 @@ function ConnectionMessagesScreenInner () {
             )}
           </>
         ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>
-              {autoRecord && !connectionData
-                ? 'Send a message to connect!'
-                : 'No messages yet. Start the conversation!'}
-            </Text>
-          </View>
+          <></>
+          // <View style={styles.emptyState}>
+          //   <Text style={styles.emptyStateText}>
+          //     {autoRecord && !connectionData
+          //       ? 'Send a message to connect!'
+          //       : 'No messages yet. Start the conversation!'}
+          //   </Text>
+          // </View>
         )}
       </ScrollView>
 
