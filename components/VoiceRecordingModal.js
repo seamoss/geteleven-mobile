@@ -646,7 +646,11 @@ export default function VoiceRecordingModal ({
               <View style={styles.recordingArea}>
                 {/* Duration Display */}
                 <Text
-                  style={[styles.duration, isPlaying && styles.durationPlaying]}
+                  style={[
+                    styles.duration,
+                    isRecording && styles.durationRecording,
+                    isPlaying && styles.durationPlaying
+                  ]}
                 >
                   {formatDuration(getCurrentDisplayTime())}
                 </Text>
@@ -676,8 +680,24 @@ export default function VoiceRecordingModal ({
                   <TouchableOpacity
                     style={styles.actionButton}
                     onPress={() => {
-                      resetRecording()
-                      setTimeout(startRecording, 100) // Restart recording after reset
+                      Alert.alert(
+                        'Re-record Message?',
+                        'This will discard your current recording and start a new one.',
+                        [
+                          {
+                            text: 'Cancel',
+                            style: 'cancel'
+                          },
+                          {
+                            text: 'Re-record',
+                            style: 'destructive',
+                            onPress: () => {
+                              resetRecording()
+                              setTimeout(startRecording, 100)
+                            }
+                          }
+                        ]
+                      )
                     }}
                     disabled={isSending}
                   >
@@ -954,6 +974,9 @@ const styles = StyleSheet.create({
     color: Colors.copy,
     marginTop: 8,
     textAlign: 'center'
+  },
+  durationRecording: {
+    color: '#22c55e' // Green color to indicate active recording
   },
   durationPlaying: {
     color: '#22c55e'
