@@ -41,8 +41,8 @@ export default function AddConnectionModal ({ visible, onClose, user }) {
           // For regular users, use the send URL format
           setShareUrl(
             `${
-              process.env.EXPO_PUBLIC_APP_URL || 'https://app.geteleven.com'
-            }/send/${user.id}`
+              process.env.EXPO_PUBLIC_APP_URL || 'https://beta.getelevenapp.com'
+            }/profile/${user.id}`
           )
         }
       }

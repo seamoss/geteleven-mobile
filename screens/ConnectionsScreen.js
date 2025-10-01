@@ -206,7 +206,12 @@ export default function ConnectionsScreen ({ navigation, route }) {
 
   const handleInvitePress = () => {
     // For non-pro users, only show upgrade modal if they have 2+ connections
-    if (meData && !meData.manager && connectionData && connectionData.length >= 2) {
+    if (
+      meData &&
+      !meData.manager &&
+      connectionData &&
+      connectionData.length >= 2
+    ) {
       setUpgradeVisible(true)
     } else {
       // Pro users or non-pro with less than 2 connections can invite
@@ -360,7 +365,7 @@ export default function ConnectionsScreen ({ navigation, route }) {
                   return (
                     <TouchableOpacity
                       style={styles.connectionItem}
-                      onPress={() => setUpgradeVisible(true)}
+                      onPress={handleInvitePress}
                     >
                       <View
                         style={[
